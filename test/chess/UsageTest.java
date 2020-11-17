@@ -72,9 +72,10 @@ public class UsageTest {
         Chess aliceColor = chess.pick(ALICE, ChessColor.black);
         Chess bobColor = chess.pick(BOB, ChessColor.white);
 
-        ChessBoardPosition position = new ChessBoardPosition("A", 3);
+        ChessBoardPosition currentPosition = new ChessBoardPosition("A", 7);
+        ChessBoardPosition desiredPosition = new ChessBoardPosition("A", 8);
 
-        Assert.assertFalse(chess.set(ChessColor.white, ChessPieces.pawn, position));
+        Assert.assertFalse(chess.set(ChessColor.white, ChessPieces.pawn, currentPosition, desiredPosition));
 
 
     }
@@ -85,9 +86,10 @@ public class UsageTest {
         Chess aliceColor = chess.pick(ALICE, ChessColor.black);
         Chess bobColor = chess.pick(BOB, ChessColor.white);
 
-        ChessBoardPosition position = new ChessBoardPosition("A", 10);
+        ChessBoardPosition currentPosition = new ChessBoardPosition("A", 7);
+        ChessBoardPosition desiredPosition = new ChessBoardPosition("A", 8);
 
-        Assert.assertFalse(chess.set(ChessColor.white, ChessPieces.pawn, position));
+        Assert.assertFalse(chess.set(ChessColor.white, ChessPieces.pawn, currentPosition, desiredPosition));
 
     }
 
@@ -97,9 +99,10 @@ public class UsageTest {
         Chess aliceColor = chess.pick(ALICE, ChessColor.black);
         Chess bobColor = chess.pick(BOB, ChessColor.white);
 
-        ChessBoardPosition position = new ChessBoardPosition("A", 3);
+        ChessBoardPosition currentPosition = new ChessBoardPosition("A", 7);
+        ChessBoardPosition desiredPosition = new ChessBoardPosition("A", 8);
 
-        chess.set(ChessColor.white, ChessPieces.rook, position);
+        chess.set(ChessColor.white, ChessPieces.rook, currentPosition, desiredPosition);
 
         chess.pick(ALICE, ChessColor.white);
 
@@ -111,9 +114,10 @@ public class UsageTest {
         Chess aliceColor = chess.pick(ALICE, ChessColor.black);
         Chess bobColor = chess.pick(BOB, ChessColor.white);
 
-        ChessBoardPosition position = new ChessBoardPosition("B", 2);
+        ChessBoardPosition currentPosition = new ChessBoardPosition("A", 7);
+        ChessBoardPosition desiredPosition = new ChessBoardPosition("A", 8);
 
-        chess.set(ChessColor.white, ChessPieces.bishop, position);
+        chess.set(ChessColor.white, ChessPieces.bishop, currentPosition, desiredPosition);
 
         chess.pick(ALICE, ChessColor.white);
 
@@ -125,9 +129,10 @@ public class UsageTest {
         Chess aliceColor = chess.pick(ALICE, ChessColor.black);
         Chess bobColor = chess.pick(BOB, ChessColor.white);
 
-        ChessBoardPosition position = new ChessBoardPosition("A", 6);
+        ChessBoardPosition currentPosition = new ChessBoardPosition("A", 7);
+        ChessBoardPosition desiredPosition = new ChessBoardPosition("A", 6);
 
-        chess.set(ChessColor.black, ChessPieces.bishop, position);
+        chess.set(ChessColor.black, ChessPieces.bishop, currentPosition, desiredPosition);
 
         chess.pick(ALICE, ChessColor.white);
 

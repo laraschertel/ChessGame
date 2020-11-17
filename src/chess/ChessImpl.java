@@ -13,7 +13,7 @@ public class ChessImpl implements Chess {
     }
 
     @Override
-    public boolean set(ChessColor color, ChessPieces piece, ChessBoardPosition position) throws GameException, StatusException {
+    public boolean set(ChessColor color, ChessPieces piece, ChessBoardPosition currentPosition, ChessBoardPosition desiredPosition) throws GameException, StatusException {
         if(this.status != Status.ACTIVE_WHITE && this.status != Status.ACTIVE_BLACK){
             throw new StatusException("set call but wrong status");
         }
