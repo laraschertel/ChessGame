@@ -52,7 +52,7 @@ public class ChessProtocolEngine implements Chess {
             throw new GameException("could not serialize command", e);
         }
 
-        return null; // !! TODO ??
+        return null;
     }
 
     private void deserializePick() throws GameException {
