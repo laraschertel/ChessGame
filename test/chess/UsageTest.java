@@ -15,15 +15,15 @@ public class UsageTest {
     @Test
     public void goodPickColour1() throws GameException, StatusException {
         Chess chess = this.getChess();
-        Chess aliceColor = chess.pick(ALICE, ChessColor.white);
+        ChessColor aliceColor = chess.pick(ALICE, ChessColor.white);
         Assert.assertEquals(ChessColor.white, aliceColor);
     }
 
     @Test
     public void goodPickColour2() throws GameException, StatusException {
         Chess chess = this.getChess();
-        Chess aliceColor = chess.pick(ALICE, ChessColor.white);
-        Chess bobColor = chess.pick(BOB, ChessColor.black);
+        ChessColor aliceColor = chess.pick(ALICE, ChessColor.white);
+        ChessColor bobColor = chess.pick(BOB, ChessColor.black);
         Assert.assertEquals(ChessColor.white, aliceColor);
         Assert.assertEquals(ChessColor.black, bobColor);
     }
@@ -31,8 +31,8 @@ public class UsageTest {
     @Test
     public void goodPickColour3() throws GameException, StatusException {
         Chess chess = this.getChess();
-        Chess aliceColor = chess.pick(ALICE, ChessColor.white);
-        Chess bobColor = chess.pick(BOB, ChessColor.white);
+        ChessColor aliceColor = chess.pick(ALICE, ChessColor.white);
+        ChessColor bobColor = chess.pick(BOB, ChessColor.white);
         Assert.assertEquals(ChessColor.white, aliceColor);
         Assert.assertEquals(ChessColor.black, bobColor);
     }
@@ -40,8 +40,8 @@ public class UsageTest {
     @Test
     public void goodPickColour4() throws GameException, StatusException {
         Chess chess = this.getChess();
-        Chess aliceColor = chess.pick(ALICE, ChessColor.white);
-        Chess bobColor = chess.pick(BOB, ChessColor.white);
+        ChessColor aliceColor = chess.pick(ALICE, ChessColor.black);
+        ChessColor bobColor = chess.pick(BOB, ChessColor.white);
         Assert.assertEquals(ChessColor.black, aliceColor);
         Assert.assertEquals(ChessColor.white, bobColor);
     }
@@ -49,10 +49,10 @@ public class UsageTest {
     @Test
     public void goodPickColour5() throws GameException, StatusException {
         Chess chess = this.getChess();
-        Chess aliceColor = chess.pick(ALICE, ChessColor.white);
+        ChessColor aliceColor = chess.pick(ALICE, ChessColor.white);
         //reconsidered
         aliceColor = chess.pick(ALICE, ChessColor.black);
-        Chess bobColor = chess.pick(BOB, ChessColor.white);
+        ChessColor bobColor = chess.pick(BOB, ChessColor.white);
         Assert.assertEquals(ChessColor.black, aliceColor);
         Assert.assertEquals(ChessColor.white, bobColor);
     }
@@ -69,8 +69,8 @@ public class UsageTest {
     @Test
     public void goodSet1() throws GameException, StatusException {
         Chess chess = this.getChess();
-        Chess aliceColor = chess.pick(ALICE, ChessColor.black);
-        Chess bobColor = chess.pick(BOB, ChessColor.white);
+        ChessColor aliceColor = chess.pick(ALICE, ChessColor.black);
+        ChessColor bobColor = chess.pick(BOB, ChessColor.white);
 
         ChessBoardPosition currentPosition = new ChessBoardPosition("A", 7);
         ChessBoardPosition desiredPosition = new ChessBoardPosition("A", 8);
@@ -83,8 +83,8 @@ public class UsageTest {
     @Test(expected = GameException.class)
     public void failureSetOutside1() throws GameException, StatusException {
         Chess chess = this.getChess();
-        Chess aliceColor = chess.pick(ALICE, ChessColor.black);
-        Chess bobColor = chess.pick(BOB, ChessColor.white);
+        ChessColor aliceColor = chess.pick(ALICE, ChessColor.black);
+        ChessColor bobColor = chess.pick(BOB, ChessColor.white);
 
         ChessBoardPosition currentPosition = new ChessBoardPosition("A", 7);
         ChessBoardPosition desiredPosition = new ChessBoardPosition("A", 8);
@@ -96,8 +96,8 @@ public class UsageTest {
     @Test(expected = StatusException.class)
     public void failureStatus1() throws GameException, StatusException {
         Chess chess = this.getChess();
-        Chess aliceColor = chess.pick(ALICE, ChessColor.black);
-        Chess bobColor = chess.pick(BOB, ChessColor.white);
+        ChessColor aliceColor = chess.pick(ALICE, ChessColor.black);
+        ChessColor bobColor = chess.pick(BOB, ChessColor.white);
 
         ChessBoardPosition currentPosition = new ChessBoardPosition("A", 7);
         ChessBoardPosition desiredPosition = new ChessBoardPosition("A", 8);
@@ -111,8 +111,8 @@ public class UsageTest {
     @Test(expected = GameException.class)
     public void failureWrongPosition1() throws GameException, StatusException {
         Chess chess = this.getChess();
-        Chess aliceColor = chess.pick(ALICE, ChessColor.black);
-        Chess bobColor = chess.pick(BOB, ChessColor.white);
+        ChessColor aliceColor = chess.pick(ALICE, ChessColor.black);
+        ChessColor bobColor = chess.pick(BOB, ChessColor.white);
 
         ChessBoardPosition currentPosition = new ChessBoardPosition("A", 7);
         ChessBoardPosition desiredPosition = new ChessBoardPosition("A", 8);
@@ -126,8 +126,8 @@ public class UsageTest {
     @Test(expected = GameException.class)
     public void failureWrongPosition2() throws GameException, StatusException {
         Chess chess = this.getChess();
-        Chess aliceColor = chess.pick(ALICE, ChessColor.black);
-        Chess bobColor = chess.pick(BOB, ChessColor.white);
+        ChessColor aliceColor = chess.pick(ALICE, ChessColor.black);
+        ChessColor bobColor = chess.pick(BOB, ChessColor.white);
 
         ChessBoardPosition currentPosition = new ChessBoardPosition("A", 7);
         ChessBoardPosition desiredPosition = new ChessBoardPosition("A", 6);

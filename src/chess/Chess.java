@@ -9,7 +9,7 @@ public interface Chess {
      * @throws GameException both colors are already taken - it is at least the third attempt in a two players game
      * @throws StatusException can only be called if game hasn't started yet
      */
-    Chess pick(String userName, ChessColor wantedColor) throws  GameException, StatusException;
+    ChessColor pick(String userName, ChessColor wantedColor) throws  GameException, StatusException;
 
     /**
      *
