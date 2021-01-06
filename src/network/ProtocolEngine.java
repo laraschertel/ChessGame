@@ -23,4 +23,8 @@ public interface ProtocolEngine {
      */
     void close() throws IOException;
 
+    void subscribeGameSessionEstablishedListener(GameSessionEstablishedListener ocListener);
+
+    void unsubscribeGameSessionEstablishedListener(GameSessionEstablishedListener ocListener);
+
 }

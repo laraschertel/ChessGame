@@ -1,8 +1,12 @@
 package chess;
 
+import network.GameSessionEstablishedListener;
 import network.ProtocolEngine;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 
 public class ChessProtocolEngine implements Chess, Runnable, ProtocolEngine {
     private OutputStream os;
@@ -27,10 +31,16 @@ public class ChessProtocolEngine implements Chess, Runnable, ProtocolEngine {
     private Thread pickWaitThread = null;
     private ChessColor pickResult;
 
+    private boolean oracle;
+    private String name;
+    private String partnerName;
 
-    public ChessProtocolEngine(Chess gameEngine) {
+
+    public ChessProtocolEngine(Chess gameEngine, String username) {
         this.gameEngine = gameEngine;
     }
+
+
 
     @Override
     public ChessColor pick(String userName, ChessColor wantedColor) throws GameException, StatusException {
@@ -63,6 +73,8 @@ public class ChessProtocolEngine implements Chess, Runnable, ProtocolEngine {
         }
     }
 
+
+
     private void deserializeResultPick() throws GameException {
         System.out.println("deserialize received pick result message");
         DataInputStream dis = new DataInputStream(this.is);
@@ -70,7 +82,7 @@ public class ChessProtocolEngine implements Chess, Runnable, ProtocolEngine {
         try{
             // read serialized color
             int colorInt = dis.readInt();
-            // cconvert to color
+            // convert to color
             this.pickResult = this.getColorFromIntValue(colorInt);
 
             // wake up thread
@@ -232,19 +244,64 @@ public class ChessProtocolEngine implements Chess, Runnable, ProtocolEngine {
 
     @Override
     public void run() {
-        System.out.println("Protocol Engine started - read");
+        System.out.println("Protocol Engine started - flip a coin");
+        long seed = this.hashCode() * System.currentTimeMillis();
+        Random random = new Random(seed);
 
+        int localInt = 0, remoteInt =0;
         try {
-            while(true){
-                this.read();
-            }
-        }catch(GameException e){
-            System.err.println("exeption called in protocol engine thread - fatal and stop");
+            DataOutputStream dos = new DataOutputStream(this.os);
+            DataInputStream dis = new DataInputStream(this.is);
+            do {
+                localInt = random.nextInt();
+                this.log("flip and take numer " + localInt);
+                dos.writeInt(localInt);
+                remoteInt = dis.readInt();
+            }while(localInt == remoteInt);
+
+            this.oracle = localInt < remoteInt;
+            this.log("Flipped a coin and got an oracle == " + this.oracle);
+            // this.oracleSet = true;
+
+            // exchange names
+            dos.writeUTF(this.name);
+            this.partnerName = dis.readUTF();
+        }catch(IOException e){
             e.printStackTrace();
-            // leave while - end thread
         }
 
+        // call listener
+        if(this.sessionCreatedListenerList != null && !this.sessionCreatedListenerList.isEmpty()){
+            for(GameSessionEstablishedListener oclistener : this.sessionCreatedListenerList){
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            Thread.sleep(1); // block a moment to let read thread start - just in case
+                        } catch (InterruptedException e) {
+                            // will not happen
+                        }
+                        oclistener.gameSessionEstablished(
+                                ChessProtocolEngine.this.oracle,
+                                ChessProtocolEngine.this.partnerName);
+                    }
+
+                }).start();
+                    }
+            }
+
+        try{
+            boolean again = true;
+            while(again){
+                again = this.read();
+            }
+        }catch(GameException e){
+            this.logError("exeption called in protocol engine thread - fatal and stop");
+
     }
+
+}
+
 
     @Override
     public void handleConnection(InputStream is, OutputStream os) throws IOException {
@@ -258,6 +315,26 @@ public class ChessProtocolEngine implements Chess, Runnable, ProtocolEngine {
 
     @Override
     public void close() throws IOException {
-
+        if(this.os != null){
+            this.os.close();
+        }
+        if(this.is != null){
+            this.is.close();
+        }
     }
+
+    private List<GameSessionEstablishedListener> sessionCreatedListenerList = new ArrayList<>();
+
+    //////////////////////////////////// oracle creation listener ///////////////////////////////////////////
+
+    @Override
+    public void subscribeGameSessionEstablishedListener(GameSessionEstablishedListener ocListener){
+        this.sessionCreatedListenerList.add(ocListener);
+    }
+
+    @Override
+    public void unsubscribeGameSessionEstablishedListener(GameSessionEstablishedListener ocListener){
+        this.sessionCreatedListenerList.remove(ocListener);
+    }
+
 }

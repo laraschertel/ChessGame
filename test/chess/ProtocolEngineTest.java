@@ -15,7 +15,7 @@ public class ProtocolEngineTest {
     public static final long TEST_THREAD_SLEEP_DURATION = 1000;
 
     private Chess getChessEngine(InputStream is, OutputStream os, Chess gameEngine) throws IOException {
-        ChessProtocolEngine chessProtocolEngine = new ChessProtocolEngine(gameEngine);
+        ChessProtocolEngine chessProtocolEngine = new ChessProtocolEngine(gameEngine, ALICE);
         chessProtocolEngine.handleConnection(is, os);
         return chessProtocolEngine;
 
@@ -85,14 +85,74 @@ public class ProtocolEngineTest {
         System.out.println("use portnumber " + ProtocolEngineTest.port);
         return ProtocolEngineTest.port;
     }
+
     @Test
+    public void integrationTest1() throws GameException, StatusException, IOException, InterruptedException{
+        // there are players in this test; Alice and Bob
+
+        // create Alice's game engine
+        ChessImpl aliceGameEngine = new ChessImpl(ALICE);
+        // create real protocol engine on Alice's side
+        ChessProtocolEngine aliceChessProtocolEngine = new ChessProtocolEngine(aliceGameEngine, ALICE);
+
+        aliceGameEngine.setProtocolEngine(aliceChessProtocolEngine);
+
+        // create Bob's game engine
+        ChessImpl bobGameEngine = new ChessImpl(BOB);
+        // create real protocol engine on Bob's side
+        ChessProtocolEngine bobChessProtocolEngine = new ChessProtocolEngine(bobGameEngine, BOB);
+
+        bobGameEngine.setProtocolEngine(bobChessProtocolEngine);
+        //////////////////////////////////////// setup tcp //////////////////////////////////////////////
+
+        int port = this.getPortNumber();
+        // this stream plays TCP server role during connection establishment
+        TCPStream aliceSide = new TCPStream(port, true, "aliceSide");
+        // this stream plays TCP client role during connection establishment
+        TCPStream bobSide = new TCPStream(port, false, "bobSide");
+        // start both streams
+        aliceSide.start(); bobSide.start();
+        // wait until the TCP connection is established
+        aliceSide.waitForConnection(); bobSide.waitForConnection();
+
+        //////////////////////////////////////// launch protocol engine  //////////////////////////////////////////////
+        // give protocol engines streams and launch
+        aliceChessProtocolEngine.handleConnection(aliceSide.getInputStream(), aliceSide.getOutputStream());
+        bobChessProtocolEngine.handleConnection(bobSide.getInputStream(), bobSide.getOutputStream());
+
+        // give it a moment - important stop this test thread - two threads must be launched
+        System.out.println("give threads a moment to be launched");
+        Thread.sleep(TEST_THREAD_SLEEP_DURATION);
+
+        //////////////////////////////////////// run scenario //////////////////////////////////////////////
+
+        ChessLocalBoard playerFirst = aliceGameEngine.isActive() ? aliceGameEngine : bobGameEngine;
+        ChessLocalBoard playerSecond = aliceGameEngine.isActive() ? bobGameEngine : aliceGameEngine;
+
+
+
+        ////////////////////////////////////////// test results /////////////////////////////////////////////
+
+        Assert.assertTrue(aliceGameEngine.getStatus() == bobGameEngine.getStatus());
+
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //                                             tidy up                                                    //
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        aliceChessProtocolEngine.close();
+        bobChessProtocolEngine.close();
+        // stop test thread to allow operating system to close sockets
+        Thread.sleep(TEST_THREAD_SLEEP_DURATION);
+
+    }
+   /* @Test
     public void pickNetworkTest() throws GameException, StatusException, IOException, InterruptedException {
         // there are players in this test; Alice and Bob
 
         // create Alice's game engine tester
         ChessReadTester aliceGameEngineTester = new ChessReadTester();
         // create real protocol engine on Alice's side
-        ChessProtocolEngine aliceChessProtocolEngine = new ChessProtocolEngine(aliceGameEngineTester);
+        ChessProtocolEngine aliceChessProtocolEngine = new ChessProtocolEngine(aliceGameEngineTester, ALICE);
 
         // make it clear - this is a protocol engine
         ProtocolEngine aliceProtocolEngine = aliceChessProtocolEngine;
@@ -102,7 +162,7 @@ public class ProtocolEngineTest {
         // create Bob's game engine tester
         ChessReadTester bobGameEngineTester = new ChessReadTester();
         // create real protocol engine on Bob's side
-        ProtocolEngine bobProtocolEngine = new ChessProtocolEngine(bobGameEngineTester);
+        ProtocolEngine bobProtocolEngine = new ChessProtocolEngine(bobGameEngineTester, BOB);
 
         //////////////////////////////////////// setup tcp //////////////////////////////////////////////
 
@@ -181,5 +241,7 @@ public class ProtocolEngineTest {
             return false;
         }
     }
+
+    */
 
 }

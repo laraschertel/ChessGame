@@ -1,10 +1,23 @@
 package chess;
 
+import network.GameSessionEstablishedListener;
+
 import java.util.HashMap;
 
-public class ChessImpl implements Chess {
+public class ChessImpl implements Chess, GameSessionEstablishedListener, ChessLocalBoard {
+   private static final String DEFAULT_PLAYERNAME = "anonPlayer";
+   private final String localPlayerName;
+   private String remotePlayerName;
     private Status status = Status.START;
     HashMap<ChessColor, String> player = new HashMap<>();
+    private ChessProtocolEngine protocolEngine;
+    private ChessColor localColor;
+    private ChessColor remoteColor;
+    private boolean localWon;
+
+    public ChessImpl(String localPlayerName) {
+        this.localPlayerName = localPlayerName;
+    }
 
 
     @Override
@@ -56,6 +69,8 @@ public class ChessImpl implements Chess {
 
     }
 
+
+
     private void changeStatusAfterPickedColor(){
         this.status = this.status == Status.START ? Status.ONE_PICKED : Status.ACTIVE_WHITE;
     }
@@ -68,7 +83,49 @@ public class ChessImpl implements Chess {
         return null;
     }
 
+
     private ChessPieces[][] board = new ChessPieces[8][8]; // horizontal / vertical
+
+    ////////////////////////////////// constructor helper ////////////////////////////////////////////
+
+    public void setProtocolEngine(ChessProtocolEngine protocolEngine){
+        this.protocolEngine = protocolEngine;
+        this.protocolEngine.subscribeGameSessionEstablishedListener(this);
+    }
+
+    @Override
+    public Status getStatus(){ return this.status;}
+
+    @Override
+    public boolean isActive(){
+        if(this.localColor == null) return false;
+
+        return(
+                (this.getStatus() == Status.ACTIVE_WHITE && this.localColor == ChessColor.white)
+                ||
+                (this.getStatus() == Status.ACTIVE_BLACK && this.localColor == ChessColor.black));
+    }
+
+    @Override
+    public boolean hasWon() {
+        return false;
+    }
+
+    @Override
+    public boolean hasLost() {
+        return false;
+    }
+
+    @Override
+    public void subscribeChangeListener(LocalBoardChangeListener changeListener) {
+
+    }
+
+
+    @Override
+    public ChessColor pick(String userName, ChessColor wantedColor) throws GameException, StatusException {
+        return null;
+    }
 
     @Override
     public boolean set(ChessColor color, ChessPieces piece, ChessBoardPosition currentPosition, ChessBoardPosition desiredPosition) throws GameException, StatusException {
@@ -78,4 +135,19 @@ public class ChessImpl implements Chess {
         return false;
     }
 
+
+   /////////////////////////////////////////////// listener /////////////////////////////////////////////////////
+
+    @Override
+    public void gameSessionEstablished(boolean oracle, String partnerName) {
+        System.out.println(this.localPlayerName + ": gameSessionEstablished with " + partnerName + " | " + oracle);
+
+        this.localColor = oracle ? ChessColor.white : ChessColor.black;
+        this.remoteColor = this.localColor == ChessColor.white ? ChessColor.black : ChessColor.white;
+        this.remotePlayerName = partnerName;
+
+        // white always starts
+        this.status = Status.ACTIVE_WHITE;
+
+    }
 }
