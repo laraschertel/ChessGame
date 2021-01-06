@@ -1,14 +1,17 @@
 package chess;
 
+import network.ProtocolEngine;
+
 import java.io.*;
 
-public class ChessProtocolEngine implements Chess {
-    private final OutputStream os;
-    private final InputStream is;
+public class ChessProtocolEngine implements Chess, Runnable, ProtocolEngine {
+    private OutputStream os;
+    private InputStream is;
     private final Chess gameEngine;
 
     private static final int METHOD_PICK = 0;
     private static final int METHOD_SET = 1;
+    private static final int RESULT_PICK = 2;
 
     private static final int COLOR_WHITE = 0;
     private static final int COLOR_BLACK = 1;
@@ -20,16 +23,18 @@ public class ChessProtocolEngine implements Chess {
     private static final int PIECE_QUEEN = 4;
     private static final int PIECE_KING = 5;
 
+    private Thread protocolThread = null;
+    private Thread pickWaitThread = null;
+    private ChessColor pickResult;
 
 
-    public ChessProtocolEngine(InputStream is, OutputStream os, Chess gameEngine) {
-        this.is = is;
-        this.os = os;
+    public ChessProtocolEngine(Chess gameEngine) {
         this.gameEngine = gameEngine;
     }
 
     @Override
     public ChessColor pick(String userName, ChessColor wantedColor) throws GameException, StatusException {
+        System.out.println("send a pick message to the other player");
         DataOutputStream dos = new DataOutputStream(this.os);
 
         try {
@@ -38,42 +43,63 @@ public class ChessProtocolEngine implements Chess {
             // write user name
             dos.writeUTF(userName);
             // serialize color
-            switch (wantedColor) {
-                case white:
-                    dos.writeInt(COLOR_WHITE);
-                    break;
-                case black:
-                    dos.writeInt(COLOR_BLACK);
-                    break;
-                default:
-                    throw new GameException("unknown color: " + wantedColor);
+            dos.writeInt(this.getIntValue4Color(wantedColor));
+
+            // read result
+            try{
+                this.pickWaitThread = Thread.currentThread();
+                Thread.sleep(Long.MAX_VALUE);
+            }catch(InterruptedException e){
+                // interrupted
+                System.out.println("pick thread back - results arrived");
             }
+
+            // remember - we are not waiting any longer
+            this.pickWaitThread = null;
+
+            return this.pickResult;
         } catch (IOException e) {
             throw new GameException("could not serialize command", e);
         }
+    }
 
-        return null;
+    private void deserializeResultPick() throws GameException {
+        System.out.println("deserialize received pick result message");
+        DataInputStream dis = new DataInputStream(this.is);
+        ChessColor wantedColor = null;
+        try{
+            // read serialized color
+            int colorInt = dis.readInt();
+            // cconvert to color
+            this.pickResult = this.getColorFromIntValue(colorInt);
+
+            // wake up thread
+            this.pickWaitThread.interrupt();
+        }catch(IOException e){
+            throw new GameException("could not deserialize command", e);
+        }
     }
 
     private void deserializePick() throws GameException {
         DataInputStream dis = new DataInputStream(this.is);
-        ChessColor wantedColor = null;
         try {
             // read user name
             String userName = dis.readUTF();
             // read serialized color
-            int colorInt = dis.readInt();
-            switch (colorInt){
-                case COLOR_WHITE: wantedColor = ChessColor.white; break;
-                case COLOR_BLACK: wantedColor = ChessColor.black; break;
-                default: throw new GameException("unknown color: " + wantedColor);
-            }
+            ChessColor wantedColor = this.getColorFromIntValue(dis.readInt());
+            // call method
+            ChessColor color = this.gameEngine.pick(userName, wantedColor);
 
-            this.gameEngine.pick(userName, wantedColor);
+            // write result
+            System.out.println("going to send return value");
+            DataOutputStream dos = new DataOutputStream(this.os);
+            dos.writeInt(RESULT_PICK);
+            dos.writeInt(this.getIntValue4Color(color));
         }catch (IOException | StatusException e){
             throw new GameException("could not deserialize command", e);
         }
     }
+
 
     @Override
     public boolean set(ChessColor color, ChessPieces piece, ChessBoardPosition currentPosition, ChessBoardPosition desiredPosition) throws GameException, StatusException {
@@ -83,19 +109,10 @@ public class ChessProtocolEngine implements Chess {
             //write method id
             dos.writeInt(METHOD_SET);
             // serialize color
-            switch (color){
-                case white: dos.writeInt(COLOR_WHITE); break;
-                case black: dos.writeInt(COLOR_BLACK); break;
-                default: throw new GameException("unknown color: " + color);
-            }
-            switch (piece){
-                case pawn: dos.writeInt(PIECE_PAWN); break;
-                case rook: dos.writeInt(PIECE_ROOK); break;
-                case knight: dos.writeInt(PIECE_KNIGHT); break;
-                case bishop: dos.writeInt(PIECE_BISHOP); break;
-                case queen: dos.writeInt(PIECE_QUEEN); break;
-                case king: dos.writeInt(PIECE_KING); break;
-            }
+            dos.writeInt(this.getIntValue4Color(color));
+            // serialize piece
+            dos.writeInt(this.getIntValue4Piece(piece));
+            // serialize position coordinates
             dos.writeUTF(currentPosition.getSCoordinate());
             dos.writeInt(currentPosition.getICoordinate());
 
@@ -110,26 +127,12 @@ public class ChessProtocolEngine implements Chess {
 
     private void deserializeSet() throws GameException{
        DataInputStream dis = new DataInputStream(this.is);
-       ChessColor color = null;
-       ChessPieces piece = null;
         try{
 
-            // read serialize color
-            int colorInt = dis.readInt();
-            switch (colorInt) {
-                case COLOR_WHITE: color = ChessColor.white; break;
-                case COLOR_BLACK: color = ChessColor.black; break;
-                default: throw new GameException("unknown color: " + color);
-            }
-            int pieceInt = dis.readInt();
-            switch (pieceInt){
-                case PIECE_PAWN: piece = ChessPieces.pawn; break;
-                case PIECE_ROOK: piece = ChessPieces.rook; break;
-                case PIECE_KNIGHT: piece = ChessPieces.knight; break;
-                case PIECE_BISHOP: piece = ChessPieces.bishop; break;
-                case PIECE_QUEEN: piece = ChessPieces.queen; break;
-                case PIECE_KING: piece = ChessPieces.king; break;
-            }
+            // read serialized color
+            ChessColor color = this.getColorFromIntValue(dis.readInt());
+            // read serialized piece
+            ChessPieces piece = this.getPieceFromIntValue(dis.readInt());
             // read S current position
             String currentSCoordinate = dis.readUTF();
             // read I current position
@@ -146,10 +149,63 @@ public class ChessProtocolEngine implements Chess {
 
             // call method
             this.gameEngine.set(color, piece, currentPosition, desiredPosition);
+
+            // write result
+            System.out.println("going to send return value");
+            DataOutputStream dos = new DataOutputStream(this.os);
+            dos.writeInt(RESULT_PICK);
+            dos.writeInt(this.getIntValue4Color(color));
         }catch(IOException | StatusException e){
             throw new GameException("could not serialize command", e);
         }
 
+    }
+
+    private ChessColor getColorFromIntValue (int colorInt) throws GameException{
+        switch (colorInt){
+            case COLOR_WHITE: return ChessColor.white;
+            case COLOR_BLACK: return  ChessColor.black;
+            default: throw new GameException("unknown color " + colorInt);
+        }
+    }
+
+    private int getIntValue4Color(ChessColor color) throws GameException{
+        switch (color){
+            case white: return COLOR_WHITE;
+            case black: return COLOR_BLACK;
+            default: throw new GameException("unknown color " + color);
+
+        }
+    }
+
+    private ChessPieces getPieceFromIntValue(int pieceInt) throws GameException{
+        switch (pieceInt){
+            case PIECE_PAWN: return ChessPieces.pawn;
+            case PIECE_ROOK: return ChessPieces.rook;
+            case PIECE_KNIGHT: return ChessPieces.knight;
+            case PIECE_BISHOP: return ChessPieces.bishop;
+            case PIECE_QUEEN: return ChessPieces.queen;
+            case PIECE_KING: return ChessPieces.king;
+            default: throw new GameException("unknown piece " + pieceInt);
+        }
+    }
+
+    private int getIntValue4Piece(ChessPieces piece)throws GameException {
+        switch (piece) {
+            case pawn:
+                return PIECE_PAWN;
+            case rook:
+                return PIECE_ROOK;
+            case knight:
+                return PIECE_KNIGHT;
+            case bishop:
+                return PIECE_BISHOP;
+            case queen:
+                return PIECE_QUEEN;
+            case king:
+                return PIECE_KING;
+            default: throw new GameException("unknown piece " + piece);
+        }
     }
 
     public void read() throws GameException {
@@ -165,11 +221,43 @@ public class ChessProtocolEngine implements Chess {
                 case METHOD_SET:
                     this.deserializeSet();
                     break;
+                case RESULT_PICK: this.deserializeResultPick(); break;
                 default:
                     throw new GameException("unknown method id: " + commandID);
             }
         } catch (IOException e) {
             throw new GameException("could not deserialize command", e);
         }
+    }
+
+    @Override
+    public void run() {
+        System.out.println("Protocol Engine started - read");
+
+        try {
+            while(true){
+                this.read();
+            }
+        }catch(GameException e){
+            System.err.println("exeption called in protocol engine thread - fatal and stop");
+            e.printStackTrace();
+            // leave while - end thread
+        }
+
+    }
+
+    @Override
+    public void handleConnection(InputStream is, OutputStream os) throws IOException {
+        this.is = is;
+        this.os = os;
+
+        this.protocolThread = new Thread(this);
+        this.protocolThread.start();
+
+    }
+
+    @Override
+    public void close() throws IOException {
+
     }
 }
