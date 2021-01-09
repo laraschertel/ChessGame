@@ -1,12 +1,14 @@
 package chess;
 
 
- public class ChessBoardPosition{
+import chessBoardGame.ChessPosition;
+
+public class ChessBoardPosition{
      private final char sCoordinate;
      private final int iCoordinate;
 
 
-     ChessBoardPosition(char sCoordinate, int iCoordinate) throws GameException {
+     public ChessBoardPosition(char sCoordinate, int iCoordinate) throws GameException {
          if(sCoordinate < 'a' || sCoordinate > 'h' || iCoordinate < 1 || iCoordinate > 8){
              throw new GameException("Only positions between a1 and h8 are valid");
          }
@@ -15,16 +17,20 @@ package chess;
 
      }
 
-     protected ChessBoardPosition desiredPosition() throws GameException {
-         return new ChessBoardPosition((char)(8 - iCoordinate), sCoordinate - 'a' );
+     protected ChessPosition toPosition() throws GameException {
+         return new ChessPosition((8 - iCoordinate), (sCoordinate - 'a') );
 
      }
 
-     protected static ChessBoardPosition currentPosition(ChessBoardPosition position){
-         return new ChessBoardPosition((char)('a' + position.getSCoordinate(),8 - position.getICoordinate());
+     public static ChessBoardPosition fromPosition(ChessPosition position) throws GameException {
+         return new ChessBoardPosition((char)('a' + position.getYCoordinate()),8 - position.getXCoordinate());
      }
 
      public char getSCoordinate() {return this.sCoordinate;}
      public int getICoordinate() {return this.iCoordinate; }
 
+    public String toString (){
+        return "" + sCoordinate + iCoordinate;
+    }
 }
+

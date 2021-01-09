@@ -1,22 +1,17 @@
 package chess;
 
+import chessBoardGame.ChessPiece;
 import network.GameSessionEstablishedListener;
-import network.ProtocolEngine;
+import pieces.*;
 
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
-public class ChessProtocolEngine implements Chess, Runnable, ProtocolEngine {
-    private OutputStream os;
-    private InputStream is;
-    private final Chess gameEngine;
+import static chess.ChessTCPProtocolEngine.METHOD_SET;
 
-    private static final int METHOD_PICK = 0;
-    private static final int METHOD_SET = 1;
-    private static final int RESULT_PICK = 2;
 
+public abstract class ChessProtocolEngine implements Chess {
     private static final int COLOR_WHITE = 0;
     private static final int COLOR_BLACK = 1;
 
@@ -26,151 +21,59 @@ public class ChessProtocolEngine implements Chess, Runnable, ProtocolEngine {
     private static final int PIECE_BISHOP = 3;
     private static final int PIECE_QUEEN = 4;
     private static final int PIECE_KING = 5;
-
-    private Thread protocolThread = null;
-    private Thread pickWaitThread = null;
-    private ChessColor pickResult;
-
-    private boolean oracle;
-    private String name;
-    private String partnerName;
-
-
-    public ChessProtocolEngine(Chess gameEngine, String username) {
-        this.gameEngine = gameEngine;
-    }
+    private Pawn pawn;
+    private Bishop bishop;
+    private Rook rook;
+    private Knight knight;
+    private Queen queen;
+    private King king;
 
 
 
-    @Override
-    public ChessColor pick(String userName, ChessColor wantedColor) throws GameException, StatusException {
-        System.out.println("send a pick message to the other player");
-        DataOutputStream dos = new DataOutputStream(this.os);
-
-        try {
-            // write method id
-            dos.writeInt(METHOD_PICK);
-            // write user name
-            dos.writeUTF(userName);
-            // serialize color
-            dos.writeInt(this.getIntValue4Color(wantedColor));
-
-            // read result
-            try{
-                this.pickWaitThread = Thread.currentThread();
-                Thread.sleep(Long.MAX_VALUE);
-            }catch(InterruptedException e){
-                // interrupted
-                System.out.println("pick thread back - results arrived");
-            }
-
-            // remember - we are not waiting any longer
-            this.pickWaitThread = null;
-
-            return this.pickResult;
-        } catch (IOException e) {
-            throw new GameException("could not serialize command", e);
-        }
-    }
-
-
-
-    private void deserializeResultPick() throws GameException {
-        System.out.println("deserialize received pick result message");
-        DataInputStream dis = new DataInputStream(this.is);
-        ChessColor wantedColor = null;
-        try{
-            // read serialized color
-            int colorInt = dis.readInt();
-            // convert to color
-            this.pickResult = this.getColorFromIntValue(colorInt);
-
-            // wake up thread
-            this.pickWaitThread.interrupt();
-        }catch(IOException e){
-            throw new GameException("could not deserialize command", e);
-        }
-    }
-
-    private void deserializePick() throws GameException {
-        DataInputStream dis = new DataInputStream(this.is);
-        try {
-            // read user name
-            String userName = dis.readUTF();
-            // read serialized color
-            ChessColor wantedColor = this.getColorFromIntValue(dis.readInt());
-            // call method
-            ChessColor color = this.gameEngine.pick(userName, wantedColor);
-
-            // write result
-            System.out.println("going to send return value");
-            DataOutputStream dos = new DataOutputStream(this.os);
-            dos.writeInt(RESULT_PICK);
-            dos.writeInt(this.getIntValue4Color(color));
-        }catch (IOException | StatusException e){
-            throw new GameException("could not deserialize command", e);
-        }
-    }
-
-
-    @Override
-    public boolean set(ChessColor color, ChessPieces piece, ChessBoardPosition currentPosition, ChessBoardPosition desiredPosition) throws GameException, StatusException {
-        DataOutputStream dos = new DataOutputStream(this.os);
+    void serializeSet(ChessBoardPosition currentPosition, ChessBoardPosition desiredPosition, OutputStream os) throws GameException, StatusException {
+        DataOutputStream dos = new DataOutputStream(os);
 
         try{
             //write method id
             dos.writeInt(METHOD_SET);
             // serialize color
-            dos.writeInt(this.getIntValue4Color(color));
+           // dos.writeInt(this.getIntValue4Color(color));
             // serialize piece
-            dos.writeInt(this.getIntValue4Piece(piece));
+            //dos.writeInt(this.getIntValue4Piece(piece));
             // serialize position coordinates
-            dos.writeUTF(currentPosition.getSCoordinate());
+            dos.writeChar(currentPosition.getSCoordinate());
             dos.writeInt(currentPosition.getICoordinate());
 
-            dos.writeUTF(desiredPosition.getSCoordinate());
+            dos.writeChar(desiredPosition.getSCoordinate());
             dos.writeInt(desiredPosition.getICoordinate());
 
         }catch(IOException e){
             throw new GameException("could not serialize command", e);
         }
-        return false;
     }
 
-    private void deserializeSet() throws GameException{
-       DataInputStream dis = new DataInputStream(this.is);
-        try{
-
+    SetCommand deserializeSet(InputStream is) throws GameException, IOException {
+        DataInputStream dis = new DataInputStream(is);
             // read serialized color
-            ChessColor color = this.getColorFromIntValue(dis.readInt());
+           // ChessColor color = this.getColorFromIntValue(dis.readInt());
             // read serialized piece
-            ChessPieces piece = this.getPieceFromIntValue(dis.readInt());
+            //ChessPiece piece = this.getPieceFromIntValue(dis.readInt());
             // read S current position
-            String currentSCoordinate = dis.readUTF();
+            char currentSCoordinate = dis.readChar();
             // read I current position
             int currentICoordinate = dis.readInt();
 
             ChessBoardPosition currentPosition = new ChessBoardPosition(currentSCoordinate, currentICoordinate);
 
             // read S desired position
-            String desiredSCoordinate = dis.readUTF();
+            char desiredSCoordinate = dis.readChar();
             // read I desired position
             int desiredICoordinate = dis.readInt();
 
             ChessBoardPosition desiredPosition = new ChessBoardPosition(desiredSCoordinate, desiredICoordinate);
 
             // call method
-            this.gameEngine.set(color, piece, currentPosition, desiredPosition);
-
-            // write result
-            System.out.println("going to send return value");
-            DataOutputStream dos = new DataOutputStream(this.os);
-            dos.writeInt(RESULT_PICK);
-            dos.writeInt(this.getIntValue4Color(color));
-        }catch(IOException | StatusException e){
-            throw new GameException("could not serialize command", e);
-        }
-
+            return new SetCommand(currentPosition, desiredPosition);
     }
 
     private ChessColor getColorFromIntValue (int colorInt) throws GameException{
@@ -190,89 +93,50 @@ public class ChessProtocolEngine implements Chess, Runnable, ProtocolEngine {
         }
     }
 
-    private ChessPieces getPieceFromIntValue(int pieceInt) throws GameException{
+    private ChessPiece getPieceFromIntValue(int pieceInt) throws GameException{
         switch (pieceInt){
-            case PIECE_PAWN: return ChessPieces.pawn;
-            case PIECE_ROOK: return ChessPieces.rook;
-            case PIECE_KNIGHT: return ChessPieces.knight;
-            case PIECE_BISHOP: return ChessPieces.bishop;
-            case PIECE_QUEEN: return ChessPieces.queen;
-            case PIECE_KING: return ChessPieces.king;
+            case PIECE_PAWN: return pawn;
+            case PIECE_ROOK: return rook;
+            case PIECE_KNIGHT: return knight;
+            case PIECE_BISHOP: return bishop;
+            case PIECE_QUEEN: return queen;
+            case PIECE_KING: return king;
             default: throw new GameException("unknown piece " + pieceInt);
         }
     }
 
-    private int getIntValue4Piece(ChessPieces piece)throws GameException {
-        switch (piece) {
-            case pawn:
+    private int getIntValue4Piece(ChessPiece piece)throws GameException {
+            if(piece == pawn) {
                 return PIECE_PAWN;
-            case rook:
-                return PIECE_ROOK;
-            case knight:
-                return PIECE_KNIGHT;
-            case bishop:
-                return PIECE_BISHOP;
-            case queen:
-                return PIECE_QUEEN;
-            case king:
-                return PIECE_KING;
-            default: throw new GameException("unknown piece " + piece);
-        }
-    }
-
-    public void read() throws GameException {
-        DataInputStream dis = new DataInputStream(this.is);
-
-        // read method id
-        try {
-            int commandID = dis.readInt();
-            switch (commandID) {
-                case METHOD_PICK:
-                    this.deserializePick();
-                    break;
-                case METHOD_SET:
-                    this.deserializeSet();
-                    break;
-                case RESULT_PICK: this.deserializeResultPick(); break;
-                default:
-                    throw new GameException("unknown method id: " + commandID);
             }
-        } catch (IOException e) {
-            throw new GameException("could not deserialize command", e);
+            if(piece == rook) {
+                return PIECE_ROOK;
+            }
+            if(piece == knight) {
+                return PIECE_KNIGHT;
+            }
+            if(piece == bishop) {
+                return PIECE_BISHOP;
+            }
+            if(piece == queen) {
+                return PIECE_QUEEN;
+            }
+            if(piece == king) {
+                return PIECE_KING;
+            } else{
+            throw new GameException("unknown piece " + piece);
         }
     }
 
-    @Override
-    public void run() {
-        System.out.println("Protocol Engine started - flip a coin");
-        long seed = this.hashCode() * System.currentTimeMillis();
-        Random random = new Random(seed);
 
-        int localInt = 0, remoteInt =0;
-        try {
-            DataOutputStream dos = new DataOutputStream(this.os);
-            DataInputStream dis = new DataInputStream(this.is);
-            do {
-                localInt = random.nextInt();
-                this.log("flip and take numer " + localInt);
-                dos.writeInt(localInt);
-                remoteInt = dis.readInt();
-            }while(localInt == remoteInt);
+    private List<GameSessionEstablishedListener> sessionCreatedListenerList = new ArrayList<>();
 
-            this.oracle = localInt < remoteInt;
-            this.log("Flipped a coin and got an oracle == " + this.oracle);
-            // this.oracleSet = true;
+    //////////////////////////////////// oracle creation listener ///////////////////////////////////////////
 
-            // exchange names
-            dos.writeUTF(this.name);
-            this.partnerName = dis.readUTF();
-        }catch(IOException e){
-            e.printStackTrace();
-        }
-
+    void notifyGamesSessionEstablished(boolean oracle, String partnerName) {
         // call listener
-        if(this.sessionCreatedListenerList != null && !this.sessionCreatedListenerList.isEmpty()){
-            for(GameSessionEstablishedListener oclistener : this.sessionCreatedListenerList){
+        if (this.sessionCreatedListenerList != null && !this.sessionCreatedListenerList.isEmpty()) {
+            for (GameSessionEstablishedListener oclistener : this.sessionCreatedListenerList) {
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
@@ -281,58 +145,18 @@ public class ChessProtocolEngine implements Chess, Runnable, ProtocolEngine {
                         } catch (InterruptedException e) {
                             // will not happen
                         }
-                        oclistener.gameSessionEstablished(
-                                ChessProtocolEngine.this.oracle,
-                                ChessProtocolEngine.this.partnerName);
+                        oclistener.gameSessionEstablished(oracle, partnerName);
                     }
-
                 }).start();
-                    }
             }
-
-        try{
-            boolean again = true;
-            while(again){
-                again = this.read();
-            }
-        }catch(GameException e){
-            this.logError("exeption called in protocol engine thread - fatal and stop");
-
-    }
-
-}
-
-
-    @Override
-    public void handleConnection(InputStream is, OutputStream os) throws IOException {
-        this.is = is;
-        this.os = os;
-
-        this.protocolThread = new Thread(this);
-        this.protocolThread.start();
-
-    }
-
-    @Override
-    public void close() throws IOException {
-        if(this.os != null){
-            this.os.close();
-        }
-        if(this.is != null){
-            this.is.close();
         }
     }
 
-    private List<GameSessionEstablishedListener> sessionCreatedListenerList = new ArrayList<>();
-
-    //////////////////////////////////// oracle creation listener ///////////////////////////////////////////
-
-    @Override
     public void subscribeGameSessionEstablishedListener(GameSessionEstablishedListener ocListener){
         this.sessionCreatedListenerList.add(ocListener);
     }
 
-    @Override
+
     public void unsubscribeGameSessionEstablishedListener(GameSessionEstablishedListener ocListener){
         this.sessionCreatedListenerList.remove(ocListener);
     }

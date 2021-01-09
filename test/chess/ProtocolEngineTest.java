@@ -14,7 +14,7 @@ public class ProtocolEngineTest {
     private static int port = 0;
     public static final long TEST_THREAD_SLEEP_DURATION = 1000;
 
-    private Chess getChessEngine(InputStream is, OutputStream os, Chess gameEngine) throws IOException {
+   /* private Chess getChessEngine(InputStream is, OutputStream os, Chess gameEngine) throws IOException {
         ChessProtocolEngine chessProtocolEngine = new ChessProtocolEngine(gameEngine, ALICE);
         chessProtocolEngine.handleConnection(is, os);
         return chessProtocolEngine;
@@ -75,7 +75,7 @@ public class ProtocolEngineTest {
     }
 
  */
-    private int getPortNumber() {
+   /* private int getPortNumber() {
         if(ProtocolEngineTest.port == 0) {
             ProtocolEngineTest.port = PORTNUMBER;
         } else {
@@ -145,6 +145,7 @@ public class ProtocolEngineTest {
         Thread.sleep(TEST_THREAD_SLEEP_DURATION);
 
     }
+    */
    /* @Test
     public void pickNetworkTest() throws GameException, StatusException, IOException, InterruptedException {
         // there are players in this test; Alice and Bob
@@ -244,4 +245,6 @@ public class ProtocolEngineTest {
 
     */
 
+
 }
+
