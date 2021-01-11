@@ -122,12 +122,12 @@ public class ChessImpl implements Chess, GameSessionEstablishedListener, ChessLo
         return moves;
     }
 
+
     public boolean set(ChessBoardPosition currentPosition, ChessBoardPosition desiredPosition) throws StatusException, GameException {
         
         if(this.status != Status.ACTIVE_WHITE && this.status != Status.ACTIVE_BLACK){
             throw new StatusException("set called but wrong status");
         }
-        ChessPiece piece;
 
         ChessPosition current = currentPosition.toPosition();
 
@@ -146,10 +146,9 @@ public class ChessImpl implements Chess, GameSessionEstablishedListener, ChessLo
         ChessPiece movedPiece = board.piece(desired);
 
         // promotion - pawn reached the other end of the board
-        
         promoted = null;
         if(movedPiece == pawn){
-            if(movedPiece.getColor() == ChessColor.white && desired.getXCoordinate() == 0 
+            if((movedPiece.getColor() == ChessColor.white && desired.getXCoordinate() == 0)
                     || (movedPiece.getColor() == ChessColor.black && desired.getXCoordinate() == 7)){
                 promoted = board.piece(desired);
                 promoted = replacePromotedPiece("A");
@@ -291,7 +290,7 @@ public class ChessImpl implements Chess, GameSessionEstablishedListener, ChessLo
             for(int i=0; i < board.getRows(); i++){
                 for(int j=0; j<board.getColumns(); j++){
                     if(moves[i][j]){
-                        ChessPosition current = ((ChessPiece) piece).getChessPosition().toPosition();
+                        ChessPosition current = (piece).getChessPosition().toPosition();
                         ChessPosition desired = new ChessPosition(i, j);
                         ChessPiece capturedPiece = makeMove(current, desired);
                         boolean testCheck = testCheck(color);
@@ -309,7 +308,7 @@ public class ChessImpl implements Chess, GameSessionEstablishedListener, ChessLo
 
     private ChessPiece makeMove(ChessPosition current, ChessPosition desired) throws GameException {
         ChessPiece piece =  board.removePiece(current);
-        piece.increaseMoveCount();
+        //piece.increaseMoveCount();
         ChessPiece capturedPiece = board.removePiece(desired);
         board.placePiece(piece, desired);
         if(capturedPiece != null){
@@ -321,7 +320,7 @@ public class ChessImpl implements Chess, GameSessionEstablishedListener, ChessLo
 
     private void undoMove(ChessPosition current, ChessPosition desired, ChessPiece capturedPiece) throws GameException {
         ChessPiece piece =  board.removePiece(desired);
-        piece.decreaseMoveCount();
+       // piece.decreaseMoveCount();
         board.placePiece(piece, current);
 
         if(capturedPiece != null){
@@ -346,7 +345,7 @@ public class ChessImpl implements Chess, GameSessionEstablishedListener, ChessLo
         List<ChessPiece> list = listColorPieces(color);
         for(ChessPiece piece : list){
             if(piece instanceof King){
-                return (ChessPiece) piece;
+                return piece;
             }
         }
         throw new IllegalStateException("There is no king with the color " + color);

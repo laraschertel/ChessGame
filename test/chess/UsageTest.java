@@ -11,21 +11,27 @@ public class UsageTest {
      private  ChessLocalBoard getChess() throws GameException {
         return new ChessImpl("undistributedBoard");
     }
-
-   /* @Test
+/*
+  @Test
     public void goodCompleteGame() throws GameException, StatusException{
          ChessLocalBoard chess = this.getChess();
          ChessColor aliceColor = chess.pick(ALICE, ChessColor.white);
          ChessColor bobColor = chess.pick(BOB, ChessColor.black);
 
-         ChessBoardPosition currentPosition = new ChessBoardPosition('a',2 );
-         ChessBoardPosition desiredPosition = new ChessBoardPosition('a',3 );
+         ChessBoardPosition currentPosition = new ChessBoardPosition('f',2 );
+         ChessBoardPosition desiredPosition = new ChessBoardPosition('f',3 );
+
+         Assert.assertFalse(chess.set(currentPosition, desiredPosition));
+
+       currentPosition = new ChessBoardPosition('e',7 );
+       desiredPosition = new ChessBoardPosition('e',6 );
 
          Assert.assertFalse(chess.set(currentPosition, desiredPosition));
 
     }
 
-    */
+ */
+
 
    /*@Test
     public void goodPickColour1() throws GameException, StatusException {

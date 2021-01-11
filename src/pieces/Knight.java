@@ -12,6 +12,13 @@ public class Knight extends ChessPiece {
         super(board, color);
     }
 
+    private boolean checkMove(ChessPosition position) throws GameException {
+        ChessPiece p = getBoard().piece(position);
+        return p == null || p.getColor() != getColor();
+
+    }
+
+
     @Override
     public boolean[][] possibleMoves() throws GameException {
         boolean[][] moves = new boolean[getBoard().getRows()][getBoard().getColumns()];
@@ -21,49 +28,49 @@ public class Knight extends ChessPiece {
 
         // knight moving 1 up 2 left
         p.setValues(position.getXCoordinate()-2, position.getYCoordinate() +1);
-        if(getBoard().isBoardPosition(p) && (getBoard().piece(p) == null || getBoard().piece(p).getColor() != getColor())){
+        if(getBoard().isBoardPosition(p) && checkMove(p)){
             moves[p.getXCoordinate()][p.getYCoordinate()] = true;
         }
 
         // knight moving 1 up 2 right
         p.setValues(position.getXCoordinate() +2, position.getYCoordinate() +1);
-        if(getBoard().isBoardPosition(p) && (getBoard().piece(p) == null || getBoard().piece(p).getColor() != getColor())){
+        if(getBoard().isBoardPosition(p) && checkMove(p)){
             moves[p.getXCoordinate()][p.getYCoordinate()] = true;
         }
 
         // knight moving 1 down 2 left
         p.setValues(position.getXCoordinate() +2, position.getYCoordinate()-1);
-        if(getBoard().isBoardPosition(p) && (getBoard().piece(p) == null || getBoard().piece(p).getColor() != getColor())){
+        if(getBoard().isBoardPosition(p) && checkMove(p)){
             moves[p.getXCoordinate()][p.getYCoordinate()] = true;
         }
 
         // knight moving 1 down 2 right
         p.setValues(position.getXCoordinate() -2, position.getYCoordinate()-1);
-        if(getBoard().isBoardPosition(p) && (getBoard().piece(p) == null || getBoard().piece(p).getColor() != getColor())){
+        if(getBoard().isBoardPosition(p) && checkMove(p)){
             moves[p.getXCoordinate()][p.getYCoordinate()] = true;
         }
 
         // knight moving 2 up 1 right
         p.setValues(position.getXCoordinate()+1, position.getYCoordinate() +2);
-        if(getBoard().isBoardPosition(p) && (getBoard().piece(p) == null || getBoard().piece(p).getColor() != getColor() )){
+        if(getBoard().isBoardPosition(p) && checkMove(p)){
             moves[p.getXCoordinate()][p.getYCoordinate()] = true;
         }
 
         // knight moving 2 up 1 left
         p.setValues(position.getXCoordinate()-1, position.getYCoordinate() +2);
-        if(getBoard().isBoardPosition(p) && (getBoard().piece(p) == null || getBoard().piece(p).getColor() != getColor())){
+        if(getBoard().isBoardPosition(p) && checkMove(p)){
             moves[p.getXCoordinate()][p.getYCoordinate()] = true;
         }
 
         // knight moving 2 down 1 right
         p.setValues(position.getXCoordinate() +1, position.getYCoordinate() -2);
-        if(getBoard().isBoardPosition(p) && (getBoard().piece(p) == null || getBoard().piece(p).getColor() != getColor())){
+        if(getBoard().isBoardPosition(p) && checkMove(p)){
             moves[p.getXCoordinate()][p.getYCoordinate()] = true;
         }
 
         // knight moving 2 down 1 left
         p.setValues(position.getXCoordinate() -1, position.getYCoordinate() -2);
-        if(getBoard().isBoardPosition(p) && (getBoard().piece(p) == null || getBoard().piece(p).getColor() != getColor())){
+        if(getBoard().isBoardPosition(p) && checkMove(p)){
             moves[p.getXCoordinate()][p.getYCoordinate()] = true;
         }
 

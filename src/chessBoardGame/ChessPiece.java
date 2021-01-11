@@ -57,6 +57,7 @@ public abstract class ChessPiece {
     public void decreaseMoveCount(){
         moveCount--;
     }
+
     public ChessBoardPosition getChessPosition() throws GameException {
         return ChessBoardPosition.fromPosition(position);
     }

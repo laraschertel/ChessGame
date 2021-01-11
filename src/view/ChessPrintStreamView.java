@@ -29,11 +29,12 @@ public class ChessPrintStreamView implements PrintStreamView {
         printBoard(gameEngine.getPieces());
         System.out.println();
         capturedPieces(capturedPieces);
-        if(!gameEngine.isCheckMate()){
+       /*if(!gameEngine.isCheckMate()){
             System.out.println("Waiting for the other player");
-            if(gameEngine.isCheck()){
+
+        */
+        if(gameEngine.isCheck()){
                 System.out.println("Check!");
-            }
         } else {
             System.out.println("CHECKMATE!");
         }

@@ -12,7 +12,7 @@ import static chess.ChessTCPProtocolEngine.METHOD_SET;
 
 
 public abstract class ChessProtocolEngine implements Chess {
-    private static final int COLOR_WHITE = 0;
+    /*private static final int COLOR_WHITE = 0;
     private static final int COLOR_BLACK = 1;
 
     private static final int PIECE_PAWN = 0;
@@ -27,6 +27,8 @@ public abstract class ChessProtocolEngine implements Chess {
     private Knight knight;
     private Queen queen;
     private King king;
+
+     */
 
 
 
@@ -76,6 +78,7 @@ public abstract class ChessProtocolEngine implements Chess {
             return new SetCommand(currentPosition, desiredPosition);
     }
 
+    /*
     private ChessColor getColorFromIntValue (int colorInt) throws GameException{
         switch (colorInt){
             case COLOR_WHITE: return ChessColor.white;
@@ -127,6 +130,8 @@ public abstract class ChessProtocolEngine implements Chess {
             throw new GameException("unknown piece " + piece);
         }
     }
+
+     */
 
 
     private List<GameSessionEstablishedListener> sessionCreatedListenerList = new ArrayList<>();
