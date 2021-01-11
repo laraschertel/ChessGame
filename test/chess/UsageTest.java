@@ -40,7 +40,7 @@ public class UsageTest {
 
   }
     @Test
-    public void goodCompleteGame3() throws GameException, StatusException{
+    public void foolsMate() throws GameException, StatusException{
         ChessLocalBoard chess = this.getChess();
         ChessColor aliceColor = chess.pick(ALICE, ChessColor.white);
         ChessColor bobColor = chess.pick(BOB, ChessColor.black);

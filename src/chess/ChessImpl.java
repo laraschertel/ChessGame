@@ -147,8 +147,7 @@ public class ChessImpl implements Chess, GameSessionEstablishedListener, ChessLo
                 
             }
         }
-        
-      boolean hasWon = this.hasWon(movedPiece);
+
 
         if(testCheck(opponentColor()) && !testCheckMate(opponentColor())){
             System.out.println("you put your opponent under CHECK!");
@@ -157,7 +156,9 @@ public class ChessImpl implements Chess, GameSessionEstablishedListener, ChessLo
         if(testCheckMate(opponentColor())){
             System.out.println(this.localPlayerName + ": set " + movedPiece  + " - has won");
             this.status = Status.ENDED;
-            if(this.localColor == movedPiece.getColor()) this.localWon = true;
+            System.out.println("Status ended");
+            this.localWon = true;
+
         }else {
             this.status = this.status == Status.ACTIVE_WHITE ? Status.ACTIVE_BLACK : Status.ACTIVE_WHITE;
             System.out.println(this.localPlayerName + ": set " + movedPiece.getColor()  + " - not won, new status " + this.status);
@@ -171,7 +172,7 @@ public class ChessImpl implements Chess, GameSessionEstablishedListener, ChessLo
         }
 
 
-        return hasWon;
+        return (this.localWon);
     }
 
     public ChessPiece replacePromotedPiece(String type) throws GameException {

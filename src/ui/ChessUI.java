@@ -11,7 +11,7 @@ import view.ChessPrintStreamView;
 import java.io.*;
 import java.util.*;
 
-public class ChessUIFirstVerion implements TCPStreamCreatedListener, GameSessionEstablishedListener, LocalBoardChangeListener {
+public class ChessUI implements TCPStreamCreatedListener, GameSessionEstablishedListener, LocalBoardChangeListener {
     private static final String PRINT = "print";
     private static final String EXIT = "exit";
     private static final String CONNECT = "connect";
@@ -40,7 +40,7 @@ public class ChessUIFirstVerion implements TCPStreamCreatedListener, GameSession
         System.out.println("Welcome " + args[0]);
         System.out.println("Let's play a game");
 
-        ChessUIFirstVerion userCmd = new ChessUIFirstVerion(args[0], System.out, System.in);
+        ChessUI userCmd = new ChessUI(args[0], System.out, System.in);
 
         userCmd.printUsage();
         userCmd.runCommandLoop();
@@ -48,7 +48,7 @@ public class ChessUIFirstVerion implements TCPStreamCreatedListener, GameSession
 
     }
 
-    public ChessUIFirstVerion(String playerName, PrintStream os, InputStream is) throws IOException, GameException {
+    public ChessUI(String playerName, PrintStream os, InputStream is) throws IOException, GameException {
         this.playerName = playerName;
         this.os = os;
         this.inBufferedReader = new BufferedReader(new InputStreamReader(is));
