@@ -11,7 +11,7 @@ public class UsageTest {
      private  ChessLocalBoard getChess() throws GameException {
         return new ChessImpl("undistributedBoard");
     }
-/*
+
   @Test
     public void goodCompleteGame() throws GameException, StatusException{
          ChessLocalBoard chess = this.getChess();
@@ -24,13 +24,25 @@ public class UsageTest {
          Assert.assertFalse(chess.set(currentPosition, desiredPosition));
 
        currentPosition = new ChessBoardPosition('e',7 );
-       desiredPosition = new ChessBoardPosition('e',6 );
+       desiredPosition = new ChessBoardPosition('e',5 );
 
          Assert.assertFalse(chess.set(currentPosition, desiredPosition));
 
-    }
+       currentPosition = new ChessBoardPosition('g',2 );
+       desiredPosition = new ChessBoardPosition('g',4 );
 
- */
+      Assert.assertFalse(chess.set(currentPosition, desiredPosition));
+
+      currentPosition = new ChessBoardPosition('d',8 );
+      desiredPosition = new ChessBoardPosition('h',4 );
+
+      Assert.assertTrue(chess.set(currentPosition, desiredPosition));
+
+
+
+  }
+
+
 
 
    /*@Test

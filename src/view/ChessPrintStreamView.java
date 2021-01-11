@@ -29,13 +29,10 @@ public class ChessPrintStreamView implements PrintStreamView {
         printBoard(gameEngine.getPieces());
         System.out.println();
         capturedPieces(capturedPieces);
-       /*if(!gameEngine.isCheckMate()){
-            System.out.println("Waiting for the other player");
 
-        */
         if(gameEngine.isCheck()){
                 System.out.println("Check!");
-        } else {
+        } else if (gameEngine.isCheckMate()) {
             System.out.println("CHECKMATE!");
         }
 
@@ -68,14 +65,14 @@ public class ChessPrintStreamView implements PrintStreamView {
             System.out.print(BoardColors.ANSI_BLUE_BACKGROUND);
         }
         if (piece == null) {
-            System.out.print("-" + BoardColors.ANSI_RESET);
+            System.out.print("-" + BoardColors.RESET);
         }
         else {
             if (piece.getColor() == ChessColor.white) {
-                System.out.print(BoardColors.ANSI_WHITE + piece + BoardColors.ANSI_RESET);
+                System.out.print(BoardColors.WHITE + piece + BoardColors.RESET);
             }
             else {
-                System.out.print(BoardColors.ANSI_YELLOW + piece + BoardColors.ANSI_RESET);
+                System.out.print(BoardColors.YELLOW + piece + BoardColors.RESET);
             }
         }
         System.out.print(" ");
@@ -89,11 +86,11 @@ public class ChessPrintStreamView implements PrintStreamView {
                 .getColor() == ChessColor.black).collect(Collectors.toList());
         System.out.println("Captured pieces: ");
         System.out.print("White pieces: ");
-        System.out.print(BoardColors.ANSI_WHITE);
+        System.out.print(BoardColors.WHITE);
         System.out.println(Arrays.toString(white.toArray()));
-        System.out.print(BoardColors.ANSI_RESET);
+        System.out.print(BoardColors.RESET);
         System.out.print("Black pieces: ");
-        System.out.print(BoardColors.ANSI_YELLOW);
+        System.out.print(BoardColors.YELLOW);
         System.out.println(Arrays.toString(black.toArray()));
 
 
