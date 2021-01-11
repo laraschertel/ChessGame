@@ -1,0 +1,1567 @@
+Index: .idea/artifacts/ChessGame_jar.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- .idea/artifacts/ChessGame_jar.xml	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
++++ .idea/artifacts/ChessGame_jar.xml	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
+@@ -0,0 +1,8 @@
++<component name="ArtifactManager">
++  <artifact type="jar" name="ChessGame:jar">
++    <output-path>$PROJECT_DIR$/out/artifacts/ChessGame_jar</output-path>
++    <root id="archive" name="ChessGame.jar">
++      <element id="module-output" name="ChessGame" />
++    </root>
++  </artifact>
++</component>
+\ No newline at end of file
+Index: src/META-INF/MANIFEST.MF
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/META-INF/MANIFEST.MF	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
++++ src/META-INF/MANIFEST.MF	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
+@@ -0,0 +1,3 @@
++Manifest-Version: 1.0
++Main-Class: ui.ChessUI
++
+Index: src/chess/ChessLocalBoard.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/chess/ChessLocalBoard.java	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
++++ src/chess/ChessLocalBoard.java	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
+@@ -0,0 +1,61 @@
++package chess;
++
++public interface ChessLocalBoard extends Chess{
++
++    /**
++     * pick is now only a local call
++     * @param userName
++     * @param wantedColor
++     * @return
++     * @throws GameException
++     * @throws StatusException
++     */
++    ChessColor pick(String userName, ChessColor wantedColor) throws GameException, StatusException;
++
++    boolean set(ChessBoardPosition currentPosition, ChessBoardPosition desiredPosition) throws GameException, StatusException;
++
++    /**
++     *
++     * @return game status
++     */
++    Status getStatus();
++
++    /**
++     *
++     * @return true if active - can set a piece, false otherwise
++     */
++    boolean isActive();
++
++    /**
++     *
++     * @return true if won, false otherwise
++     */
++    boolean hasWon();
++
++    /**
++     *
++     * @return true if lost, false otherwise
++     */
++    boolean hasLost();
++
++    /**
++     * Subscribe for changes
++     * @param changeListener
++     */
++    void subscribeChangeListener(LocalBoardChangeListener changeListener);
++
++    /**
++     *
++     * @return true if player is under check, false otherwise
++     */
++    boolean isCheck();
++
++    /**
++     *
++     * @return ture if player is under checkmate, false otherwise
++     */
++    boolean isCheckMate();
++
++
++
++}
+Index: src/chess/ChessTCPProtocolEngine.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/chess/ChessTCPProtocolEngine.java	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
++++ src/chess/ChessTCPProtocolEngine.java	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
+@@ -0,0 +1,152 @@
++package chess;
++
++import chessBoardGame.ChessPiece;
++import network.ProtocolEngine;
++
++import java.io.*;
++import java.util.Random;
++
++public class ChessTCPProtocolEngine extends ChessProtocolEngine implements Runnable, ProtocolEngine {
++    private static final String DEFAULT_NAME = "anonymousProtocolEngine";
++    private String name;
++    private OutputStream os;
++    private InputStream is;
++    private final Chess gameEngine;
++
++    public static final int METHOD_SET = 1;
++
++    private Thread protocolThread = null;
++    private boolean oracle;
++    private String partnerName;
++
++    public ChessTCPProtocolEngine(Chess gameEngine, String name) {
++        this.gameEngine = gameEngine;
++        this.name = name;
++    }
++
++    public ChessTCPProtocolEngine(Chess gameEngine) {
++        this(gameEngine, DEFAULT_NAME);
++    }
++
++
++
++    public boolean set(ChessBoardPosition currentPosition, ChessBoardPosition desiredPosition) throws GameException, StatusException {
++        this.log("send set message to other side");
++        this.serializeSet(currentPosition , desiredPosition , this.os);
++        return false;
++    }
++
++    private void deserializeSet() throws GameException {
++        this.log("deserialize received set message");
++
++        try {
++            SetCommand setCommand = this.deserializeSet(this.is);
++            // call method - but no need to keep result - it isn't sent back.
++            this.gameEngine.set(setCommand.getCurrentPosition(), setCommand.getDesiredPosition());
++        } catch (StatusException | IOException e) {
++            throw new GameException("could not deserialize command", e);
++        }
++    }
++
++    boolean read() throws GameException {
++        this.log("Protocol Engine: read from input stream");
++        DataInputStream dis = new DataInputStream(this.is);
++
++        // read method id
++        try {
++            int commandID = dis.readInt();
++            switch (commandID) {
++                case METHOD_SET: this.deserializeSet(); return true;
++                default: this.log("unknown method, throw exception id == " + commandID); return false;
++
++            }
++        } catch (IOException e) {
++            this.log("IOException caught - most probably connection close - stop thread / stop engine");
++            try {
++                this.close();
++            } catch (IOException ioException) {
++                // ignore
++            }
++            return false;
++        }
++    }
++
++
++    @Override
++    public void run() {
++        System.out.println("Protocol Engine started - flip a coin");
++        long seed = this.hashCode() * System.currentTimeMillis();
++        Random random = new Random(seed);
++
++        int localInt = 0, remoteInt =0;
++        try {
++            DataOutputStream dos = new DataOutputStream(this.os);
++            DataInputStream dis = new DataInputStream(this.is);
++            do {
++                localInt = random.nextInt();
++                this.log("flip and take number " + localInt);
++                dos.writeInt(localInt);
++                remoteInt = dis.readInt();
++            }while(localInt == remoteInt);
++
++            this.oracle = localInt < remoteInt;
++            this.log("Flipped a coin and got an oracle == " + this.oracle);
++            // this.oracleSet = true;
++
++            // exchange names
++            dos.writeUTF(this.name);
++            this.partnerName = dis.readUTF();
++        }catch(IOException e){
++            e.printStackTrace();
++        }
++
++      this.notifyGamesSessionEstablished(ChessTCPProtocolEngine.this.oracle, (ChessTCPProtocolEngine.this.partnerName));
++        try{
++            boolean again = true;
++            while(again){
++                again = this.read();
++            }
++        }catch(GameException e){
++            this.logError("exeption called in protocol engine thread - fatal and stop");
++            e.printStackTrace();
++            // leave while - end thread
++        }
++    }
++
++    @Override
++    public void handleConnection(InputStream is, OutputStream os) throws IOException {
++        this.is = is;
++        this.os = os;
++
++        this.protocolThread = new Thread(this);
++        this.protocolThread.start();
++    }
++
++    @Override
++    public void close() throws IOException {
++        if(this.os != null) { this.os.close();}
++        if(this.is != null) { this.is.close();}
++    }
++
++    private String produceLogString(String message) {
++        StringBuilder sb = new StringBuilder();
++        if(this.name != null) {
++            sb.append(this.name);
++            sb.append(": ");
++        }
++
++        sb.append(message);
++
++        return sb.toString();
++    }
++
++    private void log(String message) {
++        System.out.println(this.produceLogString(message));
++    }
++
++    private void logError(String message) {
++        System.err.println(this.produceLogString(message));
++    }
++
++}
++
+Index: src/chess/LocalBoardChangeListener.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/chess/LocalBoardChangeListener.java	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
++++ src/chess/LocalBoardChangeListener.java	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
+@@ -0,0 +1,8 @@
++package chess;
++
++public interface LocalBoardChangeListener {
++    /**
++     * just a notification that something has changed
++     */
++    void changed();
++}
+Index: src/chess/SetCommand.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/chess/SetCommand.java	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
++++ src/chess/SetCommand.java	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
+@@ -0,0 +1,26 @@
++package chess;
++
++import chessBoardGame.ChessPiece;
++
++public class SetCommand {
++   // private final ChessColor color;
++    //private final ChessPiece piece;
++    private final ChessBoardPosition currentPosition;
++    private final ChessBoardPosition desiredPosition;
++
++    public SetCommand(ChessBoardPosition currentPosition, ChessBoardPosition desiredPosition ){
++       // this.color = color;
++        //this.piece = piece;
++        this.currentPosition = currentPosition;
++        this.desiredPosition = desiredPosition;
++    }
++
++   // ChessColor getColor(){ return this.color;}
++
++   // ChessPiece getPiece(){ return this.piece;}
++
++    ChessBoardPosition getCurrentPosition(){ return this.currentPosition;}
++
++    ChessBoardPosition getDesiredPosition(){ return this.desiredPosition; }
++}
++
+Index: src/chessBoardGame/ChessBoard.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/chessBoardGame/ChessBoard.java	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
++++ src/chessBoardGame/ChessBoard.java	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
+@@ -0,0 +1,81 @@
++package chessBoardGame;
++
++import chess.ChessBoardPosition;
++import chess.GameException;
++
++public class ChessBoard {
++    private int rows;
++    private int columns;
++    private ChessPiece[][] pieces;
++
++    public ChessBoard(int rows, int columns) throws GameException {
++        if (rows < 1 || columns < 1) {
++            throw new GameException("The board must have at least one rows and one column");
++        }
++        this.rows = rows;
++        this.columns = columns;
++        pieces = new ChessPiece[rows][columns];
++    }
++
++    public int getRows(){
++        return rows;
++    }
++
++    public int getColumns(){
++        return columns;
++    }
++
++    public ChessPiece piece(int sCoordinate, int iCoordinate) throws GameException {
++        if(!isBoardPosition(sCoordinate, iCoordinate)){
++            throw new GameException("The position is not on the board");
++        }
++        return pieces[sCoordinate][iCoordinate];
++    }
++
++    public ChessPiece piece(ChessPosition position) throws GameException {
++        if (!isBoardPosition(position)){
++            throw new GameException("The position is not on the board");
++        }
++        return pieces[position.getXCoordinate()][position.getYCoordinate()];
++    }
++
++    public  void placePiece(ChessPiece piece, ChessPosition position) throws GameException {
++        if(positionIsOccupied(position)){
++            throw new GameException("There is already a piece at this position "+ position);
++        }
++        pieces[position.getXCoordinate()][position.getYCoordinate()] = piece;
++        piece.position = position;
++    }
++
++    public ChessPiece removePiece (ChessPosition position) throws GameException {
++        if(!isBoardPosition(position)){
++            throw new GameException("The position is outside the board");
++        }
++        if (piece(position) == null) {
++            return null;
++        }
++        ChessPiece aux = piece(position);
++        aux.position = null;
++        pieces[position.getXCoordinate()][position.getYCoordinate()] = null;
++        return aux;
++    }
++
++    private boolean isBoardPosition(int row, int column) {
++        return row >= 0 && row < rows && column >= 0 && column < columns;
++    }
++
++    public boolean isBoardPosition(ChessPosition position) {
++        return isBoardPosition(position.getXCoordinate(), position.getYCoordinate());
++    }
++
++    public boolean positionIsOccupied(ChessPosition position) throws GameException {
++        if (!isBoardPosition(position)) {
++            throw new GameException("The position is outside the board");
++        }
++        return piece(position) != null;
++    }
++
++
++}
++
++
+Index: src/chessBoardGame/ChessPiece.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/chessBoardGame/ChessPiece.java	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
++++ src/chessBoardGame/ChessPiece.java	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
+@@ -0,0 +1,65 @@
++package chessBoardGame;
++
++import chess.*;
++
++public abstract class ChessPiece {
++    private final ChessColor color;
++    protected ChessPosition position;
++    private ChessBoard board;
++    private int moveCount;
++    private ChessImpl gameEngine;
++
++    public ChessPiece(ChessBoard board, ChessColor color){
++        this.board = board;
++        this.color = color;
++        position = null;
++    }
++
++    protected ChessBoard getBoard() {
++        return board;
++    }
++
++    public abstract boolean[][] possibleMoves() throws GameException;
++
++    public boolean possibleMove(ChessPosition position) throws GameException {
++        return possibleMoves()[position.getXCoordinate()][position.getYCoordinate()];
++    }
++
++    public boolean isThereAnyPossibleMove() throws GameException {
++        boolean[][] moves = possibleMoves();
++        for (int i=0; i<moves.length; i++) {
++            for (int j=0; j<moves.length; j++) {
++                if (moves[i][j]) {
++                    return true;
++                }
++            }
++        }
++        return false;
++    }
++
++    public ChessColor getColor(){
++        return color;
++    }
++
++
++    protected boolean isThereOpponentPiece(ChessPosition position) throws GameException {
++        ChessPiece piece = (getBoard().piece(position));
++        return piece != null && piece.getColor() != color;
++    }
++
++    public int getMoveCount() {
++        return moveCount;
++    }
++
++    public void increaseMoveCount(){
++        moveCount++;
++    }
++    public void decreaseMoveCount(){
++        moveCount--;
++    }
++    public ChessBoardPosition getChessPosition() throws GameException {
++        return ChessBoardPosition.fromPosition(position);
++    }
++}
++
++
+Index: src/chessBoardGame/ChessPosition.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/chessBoardGame/ChessPosition.java	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
++++ src/chessBoardGame/ChessPosition.java	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
+@@ -0,0 +1,42 @@
++package chessBoardGame;
++
++import chess.ChessBoardPosition;
++import chess.GameException;
++
++public class ChessPosition {
++    private int xCoordinate;
++    private int yCoordinate;
++
++
++    public ChessPosition(int xCoordinate, int yCoordinate) {
++        this.xCoordinate = xCoordinate;
++        this.yCoordinate = yCoordinate;
++
++    }
++
++    public int getYCoordinate() {
++        return yCoordinate;
++    }
++
++    public void setYCoordinate(int yCoordinate) {
++        this.yCoordinate = yCoordinate;
++    }
++
++    public int getXCoordinate() {
++        return xCoordinate;
++    }
++
++    public void setXCoordinate(int xCoordinate) {
++        this.xCoordinate = xCoordinate;
++    }
++
++    public void setValues(int xCoordinate, int yCoordinate) {
++        this.yCoordinate = yCoordinate;
++        this.xCoordinate = xCoordinate;
++    }
++
++    @Override
++    public String toString() {
++        return xCoordinate + ", " + yCoordinate;
++    }
++}
+Index: src/network/GameSessionEstablishedListener.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/network/GameSessionEstablishedListener.java	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
++++ src/network/GameSessionEstablishedListener.java	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
+@@ -0,0 +1,15 @@
++package network;
++
++import chess.ChessProtocolEngine;
++
++/**
++ * call back interface
++ */
++public interface GameSessionEstablishedListener {
++    /**
++     * is called when oracle is created
++     * @param oracle
++     * @param partnerName
++     */
++    void gameSessionEstablished(boolean oracle, String partnerName );
++}
+Index: src/pieces/Bishop.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/pieces/Bishop.java	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
++++ src/pieces/Bishop.java	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
+@@ -0,0 +1,69 @@
++package pieces;
++
++import chess.ChessColor;
++import chess.GameException;
++import chessBoardGame.ChessBoard;
++import chessBoardGame.ChessPiece;
++import chessBoardGame.ChessPosition;
++
++public class Bishop extends ChessPiece {
++
++    public Bishop(ChessBoard board, ChessColor color) {
++        super(board, color);
++    }
++
++    @Override
++    public boolean[][] possibleMoves() throws GameException {
++        boolean[][] moves = new boolean[getBoard().getRows()][getBoard().getColumns()];
++        ChessPosition p = new ChessPosition( 0, 0);
++
++        //black and white does not have to be differentiated because bishops only move diagonally
++        // the bishop can move diagonally until the board ends or another piece stands on the way
++
++        // bishop moving up-right
++        p.setValues(position.getXCoordinate() +1, position.getYCoordinate() +1);
++        while(getBoard().isBoardPosition(p) && !getBoard().positionIsOccupied(p)){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++            p.setValues(position.getXCoordinate() +1, position.getYCoordinate()+1);
++        }
++        //bishop can take the piece that is standing on the way and take its position
++        if(getBoard().isBoardPosition(p) && isThereOpponentPiece(p)){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++        }
++
++        // bishop moving up-left
++        p.setValues(position.getXCoordinate() -1, position.getYCoordinate() +1);
++        while(getBoard().isBoardPosition(p) && !getBoard().positionIsOccupied(p)){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++            p.setValues(position.getXCoordinate() -1, position.getYCoordinate()+1);
++        }
++        if(getBoard().isBoardPosition(p) && isThereOpponentPiece(p)){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++        }
++
++        // bishop moving down-right
++        p.setValues(position.getXCoordinate() +1, position.getYCoordinate() -1);
++        while(getBoard().isBoardPosition(p) && !getBoard().positionIsOccupied(p)){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++            p.setValues(position.getXCoordinate() +1, position.getYCoordinate()-1);
++        }
++        if(getBoard().isBoardPosition(p) && isThereOpponentPiece(p)){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++        }
++
++        // bishop moving down-left
++        p.setValues(position.getXCoordinate() -1, position.getYCoordinate() -1);
++        while(getBoard().isBoardPosition(p) && !getBoard().positionIsOccupied(p)){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++            p.setValues(position.getXCoordinate() -1, position.getYCoordinate()-1);
++        }
++        if(getBoard().isBoardPosition(p) && isThereOpponentPiece(p)){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++        }
++        return moves;
++    }
++    public String toString(){
++        return "B";
++    }
++
++}
+Index: src/pieces/King.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/pieces/King.java	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
++++ src/pieces/King.java	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
+@@ -0,0 +1,76 @@
++package pieces;
++
++import chess.ChessColor;
++import chess.GameException;
++import chessBoardGame.ChessBoard;
++import chessBoardGame.ChessPiece;
++import chessBoardGame.ChessPosition;
++
++public class King extends ChessPiece {
++
++    public King(ChessBoard board, ChessColor color) {
++        super(board, color);
++    }
++
++    @Override
++    public boolean[][] possibleMoves() throws GameException {
++        boolean[][] moves = new boolean[getBoard().getRows()][getBoard().getColumns()];
++        ChessPosition p = new ChessPosition( 0, 0);
++
++        // the king can move one tile up, down, left, right or diagonally  as long as the piece occupying the "destination" tile is not occupied by a piece from the same color
++
++        // king moving up
++        p.setValues(position.getXCoordinate(), position.getYCoordinate() +1);
++        if(getBoard().isBoardPosition(p) && (getBoard().piece(p) == null || getBoard().piece(p).getColor() != getColor() )){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++        }
++
++        // king moving down
++        p.setValues(position.getXCoordinate(), position.getYCoordinate() -1);
++        if(getBoard().isBoardPosition(p) && isThereOpponentPiece(p)){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++        }
++
++        // king moving right
++        p.setValues(position.getXCoordinate() +1, position.getYCoordinate());
++        if(getBoard().isBoardPosition(p) && isThereOpponentPiece(p)){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++        }
++
++        // king moving left
++        p.setValues(position.getXCoordinate() -1, position.getYCoordinate());
++        if(getBoard().isBoardPosition(p) && isThereOpponentPiece(p)){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++        }
++
++        // king moving up-right
++        p.setValues(position.getXCoordinate()+1, position.getYCoordinate() +1);
++        if(getBoard().isBoardPosition(p) && (getBoard().piece(p) == null || getBoard().piece(p).getColor() != getColor() )){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++        }
++
++        // king moving up-left
++        p.setValues(position.getXCoordinate()-1, position.getYCoordinate() +1);
++        if(getBoard().isBoardPosition(p) && isThereOpponentPiece(p)){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++        }
++
++        // king moving down-right
++        p.setValues(position.getXCoordinate() +1, position.getYCoordinate()-1);
++        if(getBoard().isBoardPosition(p) && isThereOpponentPiece(p)){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++        }
++
++        // king moving down-left
++        p.setValues(position.getXCoordinate() -1, position.getYCoordinate()-1);
++        if(getBoard().isBoardPosition(p) && isThereOpponentPiece(p)){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++        }
++
++        return moves;
++    }
++
++    public String toString(){
++        return "K";
++    }
++}
+Index: src/pieces/Knight.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/pieces/Knight.java	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
++++ src/pieces/Knight.java	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
+@@ -0,0 +1,75 @@
++package pieces;
++
++import chess.ChessColor;
++import chess.GameException;
++import chessBoardGame.ChessBoard;
++import chessBoardGame.ChessPiece;
++import chessBoardGame.ChessPosition;
++
++public class Knight extends ChessPiece {
++
++    public Knight(ChessBoard board, ChessColor color) {
++        super(board, color);
++    }
++
++    @Override
++    public boolean[][] possibleMoves() throws GameException {
++        boolean[][] moves = new boolean[getBoard().getRows()][getBoard().getColumns()];
++        ChessPosition p = new ChessPosition( 0, 0);
++
++        // the knight can move in "L"
++
++        // knight moving 1 up 2 left
++        p.setValues(position.getXCoordinate()-2, position.getYCoordinate() +1);
++        if(getBoard().isBoardPosition(p) && (getBoard().piece(p) == null || getBoard().piece(p).getColor() != getColor())){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++        }
++
++        // knight moving 1 up 2 right
++        p.setValues(position.getXCoordinate() +2, position.getYCoordinate() +1);
++        if(getBoard().isBoardPosition(p) && (getBoard().piece(p) == null || getBoard().piece(p).getColor() != getColor())){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++        }
++
++        // knight moving 1 down 2 left
++        p.setValues(position.getXCoordinate() +2, position.getYCoordinate()-1);
++        if(getBoard().isBoardPosition(p) && (getBoard().piece(p) == null || getBoard().piece(p).getColor() != getColor())){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++        }
++
++        // knight moving 1 down 2 right
++        p.setValues(position.getXCoordinate() -2, position.getYCoordinate()-1);
++        if(getBoard().isBoardPosition(p) && (getBoard().piece(p) == null || getBoard().piece(p).getColor() != getColor())){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++        }
++
++        // knight moving 2 up 1 right
++        p.setValues(position.getXCoordinate()+1, position.getYCoordinate() +2);
++        if(getBoard().isBoardPosition(p) && (getBoard().piece(p) == null || getBoard().piece(p).getColor() != getColor() )){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++        }
++
++        // knight moving 2 up 1 left
++        p.setValues(position.getXCoordinate()-1, position.getYCoordinate() +2);
++        if(getBoard().isBoardPosition(p) && (getBoard().piece(p) == null || getBoard().piece(p).getColor() != getColor())){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++        }
++
++        // knight moving 2 down 1 right
++        p.setValues(position.getXCoordinate() +1, position.getYCoordinate() -2);
++        if(getBoard().isBoardPosition(p) && (getBoard().piece(p) == null || getBoard().piece(p).getColor() != getColor())){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++        }
++
++        // knight moving 2 down 1 left
++        p.setValues(position.getXCoordinate() -1, position.getYCoordinate() -2);
++        if(getBoard().isBoardPosition(p) && (getBoard().piece(p) == null || getBoard().piece(p).getColor() != getColor())){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++        }
++
++        return moves;
++    }
++    public String toString(){
++        return "H";
++    }
++}
+Index: src/pieces/Pawn.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/pieces/Pawn.java	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
++++ src/pieces/Pawn.java	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
+@@ -0,0 +1,76 @@
++package pieces;
++
++import chess.*;
++import chessBoardGame.ChessBoard;
++import chessBoardGame.ChessPiece;
++import chessBoardGame.ChessPosition;
++
++public class Pawn extends ChessPiece {
++
++    private ChessImpl gameEngine;
++
++    public Pawn(ChessBoard board, ChessColor color)
++    {
++        super(board, color);
++
++    }
++
++    @Override
++    public boolean[][] possibleMoves() throws GameException {
++        boolean[][] moves = new boolean[getBoard().getRows()][getBoard().getColumns()];
++        ChessPosition p = new ChessPosition( 0, 0);
++
++        // black and white must be differentiated because pawn can only move forward
++        if (getColor() == ChessColor.white) {
++            // pawn can move one tile ahead if the position is not occupied
++            p.setValues(position.getXCoordinate()-1, position.getYCoordinate());
++            if (getBoard().isBoardPosition(p) && !getBoard().positionIsOccupied(p)) {
++                moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++            }
++            // pawn can move two tiles ahead if non of these two tiles are occupied
++            p.setValues(position.getXCoordinate()-2, position.getYCoordinate());
++            ChessPosition p2 = new ChessPosition(position.getXCoordinate()-1, position.getYCoordinate() );
++            if (getBoard().isBoardPosition(p) && !getBoard().positionIsOccupied(p) && getBoard().isBoardPosition(p2) && !getBoard().positionIsOccupied(p2) && getMoveCount() ==0) {
++                moves[p.getYCoordinate()][p.getXCoordinate()] = true;
++            }
++            // pawn can move one tile ahead and one to the side if tile is occupied (taking the opponents piece)
++            p.setValues(position.getXCoordinate() -1, position.getYCoordinate() - 1);
++            if (getBoard().isBoardPosition(p) && isThereOpponentPiece(p)) {
++                moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++            }
++            // pawn can move one tile ahead and one to the side if tile is occupied (taking the opponents piece)
++            p.setValues(position.getYCoordinate() - 1, position.getXCoordinate() + 1);
++            if (getBoard().isBoardPosition(p) && isThereOpponentPiece(p)) {
++                moves[p.getYCoordinate()][p.getXCoordinate()] = true;
++            }
++
++        }else{
++            // pawn can move one tile ahead if the position is not occupied
++            p.setValues(position.getXCoordinate()+1, position.getYCoordinate());
++            if (getBoard().isBoardPosition(p) && !getBoard().positionIsOccupied(p)) {
++                moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++            }
++            // pawn can move two tiles ahead if non of these two tiles are occupied
++            p.setValues(position.getXCoordinate()+2, position.getYCoordinate());
++            ChessPosition p2 = new ChessPosition(position.getXCoordinate(), position.getYCoordinate() -1);
++            if (getBoard().isBoardPosition(p) && !getBoard().positionIsOccupied(p) && getBoard().isBoardPosition(p2) && !getBoard().positionIsOccupied(p2) && getMoveCount() ==0) {
++                moves[p.getYCoordinate()][p.getXCoordinate()] = true;
++            }
++            // pawn can move one tile ahead and one to the side if tile is occupied (taking the opponents piece)
++            p.setValues(position.getXCoordinate() + 1, position.getYCoordinate() + 1);
++            if (getBoard().isBoardPosition(p) && isThereOpponentPiece(p)) {
++                moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++            }
++            // pawn can move one tile ahead and one to the side if tile is occupied (taking the opponents piece)
++            p.setValues(position.getYCoordinate() + 1, position.getXCoordinate() - 1);
++            if (getBoard().isBoardPosition(p) && isThereOpponentPiece(p)) {
++                moves[p.getYCoordinate()][p.getXCoordinate()] = true;
++            }
++
++        }
++        return moves;
++    }
++    public String toString(){
++        return "P";
++    }
++}
+Index: src/pieces/Queen.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/pieces/Queen.java	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
++++ src/pieces/Queen.java	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
+@@ -0,0 +1,112 @@
++package pieces;
++
++import chess.ChessColor;
++import chess.GameException;
++import chessBoardGame.ChessBoard;
++import chessBoardGame.ChessPiece;
++import chessBoardGame.ChessPosition;
++
++public class Queen extends ChessPiece {
++
++
++    public Queen(ChessBoard board, ChessColor color) {
++        super(board, color);
++    }
++
++    @Override
++    public boolean[][] possibleMoves() throws GameException {
++        boolean[][] moves = new boolean[getBoard().getRows()][getBoard().getColumns()];
++        ChessPosition p = new ChessPosition( 0, 0);
++
++        //black and white does not have to be differentiated because the queen can move in any direction (diagonally or straight line)
++        // the queen has the same moves of the bishop and the rook combined
++
++
++        // queen moving up
++        p.setValues(position.getXCoordinate(), position.getYCoordinate() +1);
++        while(getBoard().isBoardPosition(p) && !getBoard().positionIsOccupied(p)){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++            p.setValues(p.getXCoordinate() , p.getYCoordinate()+1);
++        }
++        //queen can take the piece that is standing on the way and take its position
++        if(getBoard().isBoardPosition(p) && isThereOpponentPiece(p)){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++        }
++
++        // queen moving down
++        p.setValues(position.getXCoordinate(), position.getYCoordinate() -1);
++        while(getBoard().isBoardPosition(p) && !getBoard().positionIsOccupied(p)){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++            p.setValues(p.getXCoordinate(), p.getYCoordinate()-1);
++        }
++        if(getBoard().isBoardPosition(p) && isThereOpponentPiece(p)){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++        }
++
++        // queen moving right
++        p.setValues(position.getXCoordinate() +1, position.getYCoordinate());
++        while(getBoard().isBoardPosition(p) && !getBoard().positionIsOccupied(p)){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++            p.setValues(p.getXCoordinate() +1, p.getYCoordinate());
++        }
++        if(getBoard().isBoardPosition(p) && isThereOpponentPiece(p)){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++        }
++
++        // queen moving left
++        p.setValues(position.getXCoordinate() -1, position.getYCoordinate());
++        while(getBoard().isBoardPosition(p) && !getBoard().positionIsOccupied(p)){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++            p.setValues(p.getXCoordinate() -1 , p.getYCoordinate());
++        }
++        if(getBoard().isBoardPosition(p) && isThereOpponentPiece(p)){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++        }
++
++        // queen moving up-right
++        p.setValues(position.getXCoordinate() +1, position.getYCoordinate() +1);
++        while(getBoard().isBoardPosition(p) && !getBoard().positionIsOccupied(p)){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++            p.setValues(p.getXCoordinate() +1, p.getYCoordinate()+1);
++        }
++        if(getBoard().isBoardPosition(p) && isThereOpponentPiece(p)){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++        }
++
++        // queen moving up-left
++        p.setValues(position.getXCoordinate() -1, position.getYCoordinate() +1);
++        while(getBoard().isBoardPosition(p) && !getBoard().positionIsOccupied(p)){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++            p.setValues(p.getXCoordinate() -1, p.getYCoordinate()+1);
++        }
++        if(getBoard().isBoardPosition(p) && isThereOpponentPiece(p)){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++        }
++
++        // queen moving down-right
++        p.setValues(position.getXCoordinate() +1, position.getYCoordinate() -1);
++        while(getBoard().isBoardPosition(p) && !getBoard().positionIsOccupied(p)){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++            p.setValues(p.getXCoordinate() +1, p.getYCoordinate()-1);
++        }
++        if(getBoard().isBoardPosition(p) && isThereOpponentPiece(p)){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++        }
++
++        // queen moving down-left
++        p.setValues(position.getXCoordinate() -1, position.getYCoordinate() -1);
++        while(getBoard().isBoardPosition(p) && !getBoard().positionIsOccupied(p)){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++            p.setValues(p.getXCoordinate() -1, p.getYCoordinate()-1);
++        }
++        if(getBoard().isBoardPosition(p) && isThereOpponentPiece(p)){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++        }
++
++
++        return moves;
++    }
++    public String toString(){
++        return "Q";
++    }
++}
+Index: src/pieces/Rook.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/pieces/Rook.java	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
++++ src/pieces/Rook.java	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
+@@ -0,0 +1,71 @@
++package pieces;
++
++import chess.ChessColor;
++import chess.GameException;
++import chessBoardGame.ChessBoard;
++import chessBoardGame.ChessPiece;
++import chessBoardGame.ChessPosition;
++
++public class Rook extends ChessPiece {
++
++
++    public Rook(ChessBoard board, ChessColor color) {
++        super(board, color);
++    }
++
++    @Override
++    public boolean[][] possibleMoves() throws GameException {
++        boolean[][] moves = new boolean[getBoard().getRows()][getBoard().getColumns()];
++        ChessPosition p = new ChessPosition( 0, 0);
++
++        //black and white does not have to be differentiated because rooks can move in any direction in a straight line
++        // the rook can move in a line until the board ends or another piece stands on the way
++
++        // rook moving up
++        p.setValues(position.getXCoordinate(), position.getYCoordinate() +1);
++        while(getBoard().isBoardPosition(p) && !getBoard().positionIsOccupied(p)){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++            p.setValues(p.getXCoordinate() , p.getYCoordinate()+1);
++        }
++        //rook can take the piece that is standing on the way and take its position
++        if(getBoard().isBoardPosition(p) && isThereOpponentPiece(p)){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++        }
++
++        // rook moving down
++        p.setValues(position.getXCoordinate(), position.getYCoordinate() -1);
++        while(getBoard().isBoardPosition(p) && !getBoard().positionIsOccupied(p)){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++            p.setValues(p.getXCoordinate(), p.getYCoordinate()-1);
++        }
++        if(getBoard().isBoardPosition(p) && isThereOpponentPiece(p)){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++        }
++
++        // rook moving right
++        p.setValues(position.getXCoordinate() +1, position.getYCoordinate());
++        while(getBoard().isBoardPosition(p) && !getBoard().positionIsOccupied(p)){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++            p.setValues(p.getXCoordinate() +1, p.getYCoordinate());
++        }
++        if(getBoard().isBoardPosition(p) && isThereOpponentPiece(p)){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++        }
++
++        // rook moving left
++        p.setValues(position.getXCoordinate() -1, position.getYCoordinate());
++        while(getBoard().isBoardPosition(p) && !getBoard().positionIsOccupied(p)){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++            p.setValues(p.getXCoordinate() -1 , p.getYCoordinate());
++        }
++        if(getBoard().isBoardPosition(p) && isThereOpponentPiece(p)){
++            moves[p.getXCoordinate()][p.getYCoordinate()] = true;
++        }
++
++
++        return moves;
++    }
++    public String toString(){
++        return "R";
++    }
++}
+Index: src/ui/ChessUI.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/ui/ChessUI.java	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
++++ src/ui/ChessUI.java	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
+@@ -0,0 +1,327 @@
++package ui;
++
++import chess.*;
++import chessBoardGame.ChessPiece;
++import network.GameSessionEstablishedListener;
++import network.TCPStream;
++import network.TCPStreamCreatedListener;
++import view.BoardColors;
++import view.ChessPrintStreamView;
++
++import java.io.*;
++import java.util.*;
++
++public class ChessUI implements TCPStreamCreatedListener, GameSessionEstablishedListener, LocalBoardChangeListener {
++    private static final String PRINT = "print";
++    private static final String EXIT = "exit";
++    private static final String CONNECT = "connect";
++    private static final String OPEN = "open";
++    private static final String SET = "set";
++    private final String playerName;
++    private final PrintStream os;
++    private final BufferedReader inBufferedReader;
++    private final ChessImpl gameEngine;
++    private final ChessLocalBoard localBoard;
++    private TCPStream tcpStream;
++    private String partnerName;
++    private ChessTCPProtocolEngine protocolEngine;
++    private Status status;
++
++    public static void main(String[] args) throws IOException, GameException {
++        System.out.println("Welcome to Chess version0 0.1");
++
++        if (args.length < 1) {
++            System.err.println("need playerName as parameter");
++            System.exit(1);
++        }
++
++        System.out.println("Welcome " + args[0]);
++        System.out.println("Let's play a game");
++
++        ChessUI userCmd = new ChessUI(args[0], System.out, System.in);
++
++
++        List<ChessPiece> captureChessPieces = new ArrayList<>();
++
++        userCmd.printUsage();
++        userCmd.runCommandLoop();
++
++
++    }
++
++    public ChessUI(String playerName, PrintStream os, InputStream is) throws IOException, GameException {
++        this.playerName = playerName;
++        this.os = os;
++        this.inBufferedReader = new BufferedReader(new InputStreamReader(is));
++
++        this.gameEngine = new ChessImpl(playerName);
++        this.localBoard = this.gameEngine;
++        this.localBoard.subscribeChangeListener(this);
++
++    }
++
++    private void printUsage() {
++        StringBuilder b = new StringBuilder();
++
++        b.append("\n");
++        b.append("\n");
++        b.append("valid commands:");
++        b.append("\n");
++        b.append(CONNECT);
++        b.append(" .. connect as tcp client");
++        b.append("\n");
++        b.append(OPEN);
++        b.append(" .. open port become tcp server");
++        b.append("\n");
++        b.append(PRINT);
++        b.append(" .. print board");
++        b.append("\n");
++        b.append(SET);
++        b.append(" .. set a piece");
++        b.append("\n");
++        b.append(EXIT);
++        b.append(" .. exit");
++
++        this.os.println(b.toString());
++    }
++
++    private void runCommandLoop() {
++        boolean again = true;
++
++        while (again) {
++            boolean rememberCommand = true;
++            String cmdLineString = null;
++
++            try {
++                // read user input
++                cmdLineString = inBufferedReader.readLine();
++
++                // finish that loop if less than nothing came in
++                if (cmdLineString == null) break;
++
++                // trim whitespaces on both sides
++                cmdLineString = cmdLineString.trim();
++
++                // extract command
++                int spaceIndex = cmdLineString.indexOf(' ');
++                spaceIndex = spaceIndex != -1 ? spaceIndex : cmdLineString.length();
++
++                // got command string
++                String commandString = cmdLineString.substring(0, spaceIndex);
++
++                // extract parameters string - can be empty
++                String parameterString = cmdLineString.substring(spaceIndex);
++                parameterString = parameterString.trim();
++
++                // start command loop
++                switch (commandString) {
++                    case PRINT:
++                        this.doPrint();
++                        break;
++                    case CONNECT:
++                        this.doConnect(parameterString);
++                        break;
++                    case OPEN:
++                        this.doOpen();
++                        break;
++                    case SET:
++                        this.doSet();
++                        this.doPrint();
++                        break;
++                    case "q": // convenience
++                    case EXIT:
++                        again = false;
++                        this.doExit();
++                        break; // end loop
++
++                    default:
++                        this.os.println("unknown command:" + cmdLineString);
++                        this.printUsage();
++                        rememberCommand = false;
++                        break;
++                }
++            } catch (IOException ex) {
++                this.os.println("cannot read from input stream - fatal, give up");
++                try {
++                    this.doExit();
++                } catch (IOException e) {
++                    // ignore
++                }
++            } catch (StatusException ex) {
++                this.os.println("wrong status: " + ex.getLocalizedMessage());
++            } catch (GameException ex) {
++                this.os.println("game exception: " + ex.getLocalizedMessage());
++            } catch (RuntimeException ex) {
++                this.os.println("runtime problems: " + ex.getLocalizedMessage());
++            }
++
++        }
++    }
++
++    ////////////////////////////////////// ui method implementations ////////////////////////////////////
++    private void doSet() throws StatusException, GameException {
++        // call guards
++        this.checkConnectionStatus();
++
++       /* StringTokenizer st = new StringTokenizer(parameterString);
++        char sCoordinateCurrent = (st.nextToken()).charAt(0);
++        int iCoordinateCurrent = Integer.parseInt(st.nextToken());
++
++        char sCoordinateDesired = (st.nextToken()).charAt(0);
++        int iCoordinateDesired = Integer.parseInt(st.nextToken());
++
++        */
++
++        System.out.println("Please enter the current position of the piece that you want to move");
++        Scanner scanner = new Scanner(System.in);
++        String cp = scanner.nextLine();
++        ChessBoardPosition currentPosition = new ChessBoardPosition(cp.charAt(0), Integer.parseInt(cp.substring(1)));
++
++        boolean[][] possibleMoves = this.gameEngine.possibleMoves(currentPosition);
++        ChessPrintStreamView.printBoard(this.gameEngine.getPieces(), possibleMoves);
++
++        System.out.println("Please enter the desired position of the piece that you want to move");
++        String dp = scanner.nextLine();
++
++
++        ChessBoardPosition desiredPosition = new ChessBoardPosition(dp.charAt(0), Integer.parseInt(dp.substring(1)));
++
++
++        this.gameEngine.set(currentPosition, desiredPosition);
++
++        ChessPrintStreamView.printBoard(this.gameEngine.getPieces());
++        System.out.println();
++
++
++    }
++
++    private void doExit() throws IOException {
++        // shutdown engines which needs to be
++        this.protocolEngine.close();
++    }
++
++    private void doOpen() {
++        if (this.alreadyConnected()) return;
++
++        this.tcpStream = new TCPStream(Chess.DEFAULT_PORT, true, this.playerName);
++        this.tcpStream.setStreamCreationListener(this);
++        this.tcpStream.start();
++    }
++
++    private void doConnect(String parameterString) throws NoSuchElementException, GameException {
++        if (this.alreadyConnected()) return;
++
++        String hostname = null;
++
++        try {
++            StringTokenizer st = new StringTokenizer(parameterString);
++            hostname = st.nextToken();
++        } catch (NoSuchElementException e) {
++            System.out.println("no hostname provided - take localhost");
++            hostname = "localhost";
++        }
++
++        this.tcpStream = new TCPStream(Chess.DEFAULT_PORT, false, this.playerName);
++        this.tcpStream.setRemoteEngine(hostname);
++        this.tcpStream.setStreamCreationListener(this);
++        this.tcpStream.start();
++
++
++    }
++
++    private void doPrint() throws IOException, GameException {
++
++        List<ChessPiece> captureChessPieces = new ArrayList<>();
++
++        try {
++            System.out.print(BoardColors.ANSI_RESET);
++            ChessPrintStreamView.printChess(this.gameEngine, captureChessPieces);
++            System.out.println();
++
++
++        } catch (GameException | InputMismatchException e) {
++            System.out.println(e.getMessage());
++
++        }
++
++
++        if (this.gameEngine.getStatus() == Status.ENDED) {
++            if (this.gameEngine.hasWon()) {
++                System.out.println("you won");
++            } else {
++                System.out.println("you lost");
++            }
++        } else if (this.gameEngine.isActive()) {
++            System.out.println("your turn");
++        } else {
++            System.out.println("please wait");
++        }
++    }
++
++    ////////////////////////////////////////////////// guards //////////////////////////////////////////////
++
++    /**
++     * Guard method - checks if already connected
++     *
++     * @throws StatusException
++     **/
++
++    private void checkConnectionStatus() throws StatusException {
++        if (this.protocolEngine == null) {
++            throw new StatusException("not yet connected - call connect or open before");
++        }
++    }
++
++    //////////////////////////////////////  helper : dont repeat yourself //////////////////////////////////////////////
++
++    private boolean alreadyConnected() {
++        if (this.tcpStream != null) {
++            System.err.println("connection already established or connection attempt in progress");
++            return true;
++        }
++
++        return false;
++    }
++
++
++    ///////////////////////////////////////// listener //////////////////////////////////////////////////////
++
++    @Override
++    public void streamCreated(TCPStream stream) {
++        // connection established - setup protocol engine
++        System.out.println("stream created - setup engine - we can play quite soon.");
++        this.protocolEngine = new ChessTCPProtocolEngine(this.gameEngine, this.playerName);
++        this.gameEngine.setProtocolEngine(protocolEngine);
++
++        this.protocolEngine.subscribeGameSessionEstablishedListener(this);
++
++        try {
++            protocolEngine.handleConnection(stream.getInputStream(), stream.getOutputStream());
++        } catch (IOException e) {
++            System.err.println("cannot get streams from tcpStream - fatal, give up: " + e.getLocalizedMessage());
++            System.exit(1);
++        }
++    }
++
++    @Override
++    public void changed() {
++        try {
++            this.doPrint();
++        } catch (IOException | GameException e) {
++            System.err.println("very very unexpected: " + e.getLocalizedMessage());
++        }
++    }
++
++    @Override
++    public void gameSessionEstablished(boolean oracle, String partnerName) {
++        System.out.println("game session created");
++        this.partnerName = partnerName;
++
++        if (oracle) {
++            System.out.println("your turn");
++        } else {
++            System.out.println("wait for other player to set a piece");
++        }
++
++    }
++}
+Index: src/view/BoardColors.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/view/BoardColors.java	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
++++ src/view/BoardColors.java	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
+@@ -0,0 +1,22 @@
++package view;
++
++public class BoardColors {
++    public static final String ANSI_RESET = "\u001B[0m";
++    public static final String ANSI_BLACK = "\u001B[30m";
++    public static final String ANSI_RED = "\u001B[31m";
++    public static final String ANSI_GREEN = "\u001B[32m";
++    public static final String ANSI_YELLOW = "\u001B[33m";
++    public static final String ANSI_BLUE = "\u001B[34m";
++    public static final String ANSI_PURPLE = "\u001B[35m";
++    public static final String ANSI_CYAN = "\u001B[36m";
++    public static final String ANSI_WHITE = "\u001B[37m";
++
++    public static final String ANSI_BLACK_BACKGROUND = "\u001B[40m";
++    public static final String ANSI_RED_BACKGROUND = "\u001B[41m";
++    public static final String ANSI_GREEN_BACKGROUND = "\u001B[42m";
++    public static final String ANSI_YELLOW_BACKGROUND = "\u001B[43m";
++    public static final String ANSI_BLUE_BACKGROUND = "\u001B[44m";
++    public static final String ANSI_PURPLE_BACKGROUND = "\u001B[45m";
++    public static final String ANSI_CYAN_BACKGROUND = "\u001B[46m";
++    public static final String ANSI_WHITE_BACKGROUND = "\u001B[47m";
++}
+Index: src/view/ChessPrintStreamView.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/view/ChessPrintStreamView.java	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
++++ src/view/ChessPrintStreamView.java	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
+@@ -0,0 +1,104 @@
++package view;
++
++import chess.ChessColor;
++import chess.ChessImpl;
++import chess.GameException;
++import chessBoardGame.ChessBoard;
++import chessBoardGame.ChessPiece;
++import chessBoardGame.ChessPosition;
++
++import java.io.IOException;
++import java.io.PrintStream;
++import java.util.Arrays;
++import java.util.List;
++import java.util.stream.Collectors;
++
++public class ChessPrintStreamView implements PrintStreamView {
++    private final ChessBoard board;
++
++    public ChessPrintStreamView(ChessBoard board) {
++        this.board = board;
++    }
++
++    @Override
++    public void print(PrintStream ps) throws IOException {
++
++    }
++
++  public static void printChess(ChessImpl gameEngine, List<ChessPiece> capturedPieces) throws GameException {
++        printBoard(gameEngine.getPieces());
++        System.out.println();
++        capturedPieces(capturedPieces);
++        if(!gameEngine.isCheckMate()){
++            System.out.println("Waiting for the other player");
++            if(gameEngine.isCheck()){
++                System.out.println("Check!");
++            }
++        } else {
++            System.out.println("CHECKMATE!");
++        }
++
++    }
++
++    public static void printBoard(ChessPiece[][] pieces) {
++        for (int i = 0; i < pieces.length; i++) {
++            System.out.print((8 - i) + " ");
++            for (int j = 0; j < pieces.length; j++) {
++                printPiece(pieces[i][j], false);
++            }
++            System.out.println();
++        }
++        System.out.println("  a b c d e f g h");
++    }
++
++    public static void printBoard(ChessPiece[][] pieces, boolean[][] possibleMoves) {
++        for (int i = 0; i < pieces.length; i++) {
++            System.out.print((8 - i) + " ");
++            for (int j = 0; j < pieces.length; j++) {
++                printPiece(pieces[i][j], possibleMoves[i][j]);
++            }
++            System.out.println();
++        }
++        System.out.println("  a b c d e f g h");
++    }
++
++    private static void printPiece(ChessPiece piece, boolean background) {
++        if (background) {
++            System.out.print(BoardColors.ANSI_BLUE_BACKGROUND);
++        }
++        if (piece == null) {
++            System.out.print("-" + BoardColors.ANSI_RESET);
++        }
++        else {
++            if (piece.getColor() == ChessColor.white) {
++                System.out.print(BoardColors.ANSI_WHITE + piece + BoardColors.ANSI_RESET);
++            }
++            else {
++                System.out.print(BoardColors.ANSI_YELLOW + piece + BoardColors.ANSI_RESET);
++            }
++        }
++        System.out.print(" ");
++    }
++
++    private static void capturedPieces(List<ChessPiece> chessPieces) {
++        List<ChessPiece> white = chessPieces.stream().filter(x->x
++                .getColor() == ChessColor.white).collect(Collectors.toList());
++
++        List<ChessPiece> black = chessPieces.stream().filter(x->x
++                .getColor() == ChessColor.black).collect(Collectors.toList());
++        System.out.println("Captured pieces: ");
++        System.out.print("White pieces: ");
++        System.out.print(BoardColors.ANSI_WHITE);
++        System.out.println(Arrays.toString(white.toArray()));
++        System.out.print(BoardColors.ANSI_RESET);
++        System.out.print("Black pieces: ");
++        System.out.print(BoardColors.ANSI_YELLOW);
++        System.out.println(Arrays.toString(black.toArray()));
++
++
++    }
++
++
++
++    }
++
+Index: src/view/PrintStreamView.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/view/PrintStreamView.java	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
++++ src/view/PrintStreamView.java	(revision 43499ee414231c9152982e2b212b3670dccf5a71)
+@@ -0,0 +1,13 @@
++package view;
++
++import java.io.IOException;
++import java.io.PrintStream;
++
++public interface PrintStreamView {
++    /**
++     * Print a (visual) representation to given stream
++     * @param ps
++     * @throws IOException
++     */
++    void print(PrintStream ps) throws IOException;
++}
