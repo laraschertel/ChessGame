@@ -24,11 +24,6 @@ public class ChessTCPProtocolEngine extends ChessProtocolEngine implements Runna
         this.name = name;
     }
 
-    public ChessTCPProtocolEngine(Chess gameEngine) {
-        this(gameEngine, DEFAULT_NAME);
-    }
-
-
 
     public boolean set(ChessBoardPosition currentPosition, ChessBoardPosition desiredPosition) throws GameException, StatusException {
         this.log("send set message to other side");

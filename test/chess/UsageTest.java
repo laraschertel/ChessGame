@@ -36,7 +36,7 @@ public class UsageTest {
       currentPosition = new ChessBoardPosition('d',8 );
       desiredPosition = new ChessBoardPosition('h',4 );
 
-      Assert.assertTrue(chess.set(currentPosition, desiredPosition));
+      Assert.assertFalse(chess.set(currentPosition, desiredPosition));
 
   }
     @Test

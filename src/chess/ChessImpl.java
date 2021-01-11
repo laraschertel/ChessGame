@@ -151,7 +151,7 @@ public class ChessImpl implements Chess, GameSessionEstablishedListener, ChessLo
       boolean hasWon = this.hasWon(movedPiece);
 
         if(testCheck(opponentColor()) && !testCheckMate(opponentColor())){
-            System.out.println("CHECK!");
+            System.out.println("you put your opponent under CHECK!");
         }
 
         if(testCheckMate(opponentColor())){
@@ -162,8 +162,6 @@ public class ChessImpl implements Chess, GameSessionEstablishedListener, ChessLo
             this.status = this.status == Status.ACTIVE_WHITE ? Status.ACTIVE_BLACK : Status.ACTIVE_WHITE;
             System.out.println(this.localPlayerName + ": set " + movedPiece.getColor()  + " - not won, new status " + this.status);
         }
-
-
         // tell other side
         if(this.localColor == movedPiece.getColor() && this.protocolEngine != null){
             this.protocolEngine.set(currentPosition, desiredPosition);
