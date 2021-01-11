@@ -2,6 +2,7 @@ package chess;
 
 import chessBoardGame.ChessPiece;
 import network.GameSessionEstablishedListener;
+import network.ProtocolEngine;
 import pieces.*;
 
 import java.io.*;
@@ -11,7 +12,7 @@ import java.util.List;
 import static chess.ChessTCPProtocolEngine.METHOD_SET;
 
 
-public abstract class ChessProtocolEngine implements Chess {
+public abstract class ChessProtocolEngine implements Chess, ProtocolEngine {
     /*private static final int COLOR_WHITE = 0;
     private static final int COLOR_BLACK = 1;
 

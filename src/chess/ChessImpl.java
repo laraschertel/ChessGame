@@ -8,7 +8,6 @@ import pieces.*;
 import view.ChessPrintStreamView;
 import view.PrintStreamView;
 
-import java.io.OutputStream;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,13 +28,7 @@ public class ChessImpl implements Chess, GameSessionEstablishedListener, ChessLo
     private boolean checkMate;
     private ChessPiece promoted;
     private ChessBoard board;
-    private Pawn pawn;
-    private Bishop bishop;
-    private Rook rook;
-    private Knight knight;
-    private Queen queen;
-    private King king;
-    private int turn;
+
 
     private List<ChessPiece> piecesOnTheBoard = new ArrayList<>();
     private List<ChessPiece> capturedPieces = new ArrayList<>();
@@ -44,7 +37,6 @@ public class ChessImpl implements Chess, GameSessionEstablishedListener, ChessLo
 
         this.localPlayerName = localPlayerName;
         this.board = new ChessBoard(8,8);
-        turn = 1;
         initialSetup();
     }
 
@@ -124,30 +116,30 @@ public class ChessImpl implements Chess, GameSessionEstablishedListener, ChessLo
 
 
     public boolean set(ChessBoardPosition currentPosition, ChessBoardPosition desiredPosition) throws StatusException, GameException {
-        
         if(this.status != Status.ACTIVE_WHITE && this.status != Status.ACTIVE_BLACK){
             throw new StatusException("set called but wrong status");
         }
 
         ChessPosition current = currentPosition.toPosition();
-
-
         validateCurrentPosition(current);
+
         ChessPosition desired = desiredPosition.toPosition();
         validateDesiredPosition(current, desired);
+
         ChessPiece capturedPiece = makeMove(current, desired);
 
         
-        if(testCheck(currentPlayer())){
+        if(testCheck(currentPlayerColor())){
             undoMove(current, desired, capturedPiece);
             throw new GameException("your can't put yourself under check");
         }
 
         ChessPiece movedPiece = board.piece(desired);
 
+
         // promotion - pawn reached the other end of the board
         promoted = null;
-        if(movedPiece == pawn){
+        if(movedPiece instanceof Pawn){
             if((movedPiece.getColor() == ChessColor.white && desired.getXCoordinate() == 0)
                     || (movedPiece.getColor() == ChessColor.black && desired.getXCoordinate() == 7)){
                 promoted = board.piece(desired);
@@ -158,7 +150,11 @@ public class ChessImpl implements Chess, GameSessionEstablishedListener, ChessLo
         
       boolean hasWon = this.hasWon(movedPiece);
 
-        if(hasWon){
+        if(testCheck(opponentColor()) && !testCheckMate(opponentColor())){
+            System.out.println("CHECK!");
+        }
+
+        if(testCheckMate(opponentColor())){
             System.out.println(this.localPlayerName + ": set " + movedPiece  + " - has won");
             this.status = Status.ENDED;
             if(this.localColor == movedPiece.getColor()) this.localWon = true;
@@ -167,14 +163,16 @@ public class ChessImpl implements Chess, GameSessionEstablishedListener, ChessLo
             System.out.println(this.localPlayerName + ": set " + movedPiece.getColor()  + " - not won, new status " + this.status);
         }
 
-        // tell other side
 
+        // tell other side
         if(this.localColor == movedPiece.getColor() && this.protocolEngine != null){
             this.protocolEngine.set(currentPosition, desiredPosition);
         } else {
             // remote call
             this.notifyBoardChanged();
         }
+
+
         return hasWon;
     }
 
@@ -205,14 +203,14 @@ public class ChessImpl implements Chess, GameSessionEstablishedListener, ChessLo
         return new Rook(board, color);
     }
 
-    public ChessColor currentPlayer(){
+    public ChessColor currentPlayerColor(){
         if(this.status == Status.ACTIVE_WHITE){
             return ChessColor.white;
-        }
-        if(this.status == Status.ACTIVE_BLACK){
+        } else if(this.status == Status.ACTIVE_BLACK){
             return ChessColor.black;
+        }else {
+            return null;
         }
-        return null;
     }
     
 
@@ -240,7 +238,7 @@ public class ChessImpl implements Chess, GameSessionEstablishedListener, ChessLo
     }
 
     private boolean hasWon(ChessPiece piece) throws GameException {
-        return testCheckMate(currentPlayer());
+        return testCheckMate(currentPlayerColor());
 
     }
 
@@ -267,12 +265,20 @@ public class ChessImpl implements Chess, GameSessionEstablishedListener, ChessLo
                         (this.getStatus() == Status.ACTIVE_BLACK && this.localColor == ChessColor.black));
     }
 
+    private  ChessColor otherColor(ChessColor color){
+        if(color == ChessColor.white) {
+            return ChessColor.black;
+        }else{
+            return ChessColor.white;
+        }
+    }
+
     private boolean testCheck(ChessColor color) throws GameException {
         ChessPosition kingPosition = king(color).getChessPosition().toPosition();
-        List<ChessPiece> opponentPieces = listColorPieces(opponent());
+        List<ChessPiece> opponentPieces = listColorPieces(otherColor(color));
 
-        for (ChessPiece piece : opponentPieces) {
-            boolean[][] moves = piece.possibleMoves();
+        for(int i= 0; i < opponentPieces.size(); i++ ){
+            boolean[][] moves = opponentPieces.get(i).possibleMoves();
             if (moves[kingPosition.getXCoordinate()][kingPosition.getYCoordinate()]) {
                 return true;
             }
@@ -285,13 +291,13 @@ public class ChessImpl implements Chess, GameSessionEstablishedListener, ChessLo
             return false;
         }
         List<ChessPiece> list = listColorPieces(color);
-        for(ChessPiece piece : list){
-            boolean[][] moves = piece.possibleMoves();
-            for(int i=0; i < board.getRows(); i++){
-                for(int j=0; j<board.getColumns(); j++){
-                    if(moves[i][j]){
-                        ChessPosition current = (piece).getChessPosition().toPosition();
-                        ChessPosition desired = new ChessPosition(i, j);
+        for(int i= 0; i < list.size(); i++ ){
+            boolean[][] moves = list.get(i).possibleMoves();
+            for(int x=0; x < board.getRows(); x++){
+                for(int y=0; y< board.getColumns(); y++){
+                    if(moves[x][y]){
+                        ChessPosition current = (list.get(i)).getChessPosition().toPosition();
+                        ChessPosition desired = new ChessPosition(x, y);
                         ChessPiece capturedPiece = makeMove(current, desired);
                         boolean testCheck = testCheck(color);
                         undoMove(current, desired, capturedPiece);
@@ -330,33 +336,38 @@ public class ChessImpl implements Chess, GameSessionEstablishedListener, ChessLo
         }
     }
 
-    private ChessColor opponent() {
+    private ChessColor opponentColor() {
         if(this.status == Status.ACTIVE_WHITE){
             return ChessColor.black;
-        }
-        if(this.status == Status.ACTIVE_BLACK){
+        } else if(this.status == Status.ACTIVE_BLACK){
             return ChessColor.white;
         }else{
             return null;
         }
     }
 
-    private ChessPiece king(ChessColor color){
+    private ChessPiece king(ChessColor color) throws GameException {
         List<ChessPiece> list = listColorPieces(color);
-        for(ChessPiece piece : list){
-            if(piece instanceof King){
-                return piece;
+
+        for(int i=0; i < list.size(); i++){
+            if(list.get(i) instanceof King){
+                return list.get(i);
             }
         }
         throw new IllegalStateException("There is no king with the color " + color);
     }
 
-    private List<ChessPiece> listColorPieces(ChessColor color) {
-        return piecesOnTheBoard.stream()
-                .filter(x -> (x)
-                        .getColor() == color)
-                .collect(Collectors.toList());
-    }
+
+    private List<ChessPiece> listColorPieces(ChessColor color) throws GameException {
+        int j =0;
+        List<ChessPiece> listColorPiece = new ArrayList<>();
+        for(int i= 0; i < piecesOnTheBoard.size(); i++){
+            if(piecesOnTheBoard.get(i).getColor() == color){
+                listColorPiece.add(piecesOnTheBoard.get(i));
+            }
+        }
+        return listColorPiece;
+        }
 
 
     ////////////////////////////////// constructor helper ////////////////////////////////////////////

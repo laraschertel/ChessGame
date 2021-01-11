@@ -42,8 +42,6 @@ public class ChessUIFirstVerion implements TCPStreamCreatedListener, GameSession
 
         ChessUIFirstVerion userCmd = new ChessUIFirstVerion(args[0], System.out, System.in);
 
-
-
         userCmd.printUsage();
         userCmd.runCommandLoop();
 
@@ -162,15 +160,6 @@ public class ChessUIFirstVerion implements TCPStreamCreatedListener, GameSession
         // call guards
         this.checkConnectionStatus();
 
-       /* StringTokenizer st = new StringTokenizer(parameterString);
-        char sCoordinateCurrent = (st.nextToken()).charAt(0);
-        int iCoordinateCurrent = Integer.parseInt(st.nextToken());
-
-        char sCoordinateDesired = (st.nextToken()).charAt(0);
-        int iCoordinateDesired = Integer.parseInt(st.nextToken());
-
-        */
-
         System.out.println("Please enter the current position of the piece that you want to move");
         Scanner scanner = new Scanner(System.in);
         String cp = scanner.nextLine();
@@ -188,9 +177,9 @@ public class ChessUIFirstVerion implements TCPStreamCreatedListener, GameSession
 
         this.gameEngine.set(currentPosition, desiredPosition);
 
+
         ChessPrintStreamView.printBoard(this.gameEngine.getPieces());
         System.out.println();
-
 
     }
 

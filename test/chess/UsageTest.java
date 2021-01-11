@@ -28,8 +28,8 @@ public class UsageTest {
 
          Assert.assertFalse(chess.set(currentPosition, desiredPosition));
 
-       currentPosition = new ChessBoardPosition('g',2 );
-       desiredPosition = new ChessBoardPosition('g',4 );
+       currentPosition = new ChessBoardPosition('a',2 );
+       desiredPosition = new ChessBoardPosition('a',3 );
 
       Assert.assertFalse(chess.set(currentPosition, desiredPosition));
 
@@ -38,9 +38,64 @@ public class UsageTest {
 
       Assert.assertTrue(chess.set(currentPosition, desiredPosition));
 
-
-
   }
+    @Test
+    public void goodCompleteGame3() throws GameException, StatusException{
+        ChessLocalBoard chess = this.getChess();
+        ChessColor aliceColor = chess.pick(ALICE, ChessColor.white);
+        ChessColor bobColor = chess.pick(BOB, ChessColor.black);
+
+        ChessBoardPosition currentPosition = new ChessBoardPosition('f',2 );
+        ChessBoardPosition desiredPosition = new ChessBoardPosition('f',3 );
+
+        Assert.assertFalse(chess.set(currentPosition, desiredPosition));
+
+        currentPosition = new ChessBoardPosition('e',7 );
+        desiredPosition = new ChessBoardPosition('e',5 );
+
+        Assert.assertFalse(chess.set(currentPosition, desiredPosition));
+
+        currentPosition = new ChessBoardPosition('g',2 );
+        desiredPosition = new ChessBoardPosition('g',4 );
+
+        Assert.assertFalse(chess.set(currentPosition, desiredPosition));
+
+        currentPosition = new ChessBoardPosition('d',8 );
+        desiredPosition = new ChessBoardPosition('h',4 );
+
+        Assert.assertTrue(chess.set(currentPosition, desiredPosition));
+
+    }
+
+
+    @Test
+    public void goodCompleteGame2() throws GameException, StatusException{
+        ChessLocalBoard chess = this.getChess();
+        ChessColor aliceColor = chess.pick(ALICE, ChessColor.white);
+        ChessColor bobColor = chess.pick(BOB, ChessColor.black);
+
+        ChessBoardPosition currentPosition = new ChessBoardPosition('a',2 );
+        ChessBoardPosition desiredPosition = new ChessBoardPosition('a',3 );
+
+        Assert.assertFalse(chess.set(currentPosition, desiredPosition));
+
+        currentPosition = new ChessBoardPosition('a',7 );
+        desiredPosition = new ChessBoardPosition('a',5 );
+
+        Assert.assertFalse(chess.set(currentPosition, desiredPosition));
+
+        currentPosition = new ChessBoardPosition('b',1 );
+        desiredPosition = new ChessBoardPosition('c',3 );
+
+        Assert.assertFalse(chess.set(currentPosition, desiredPosition));
+
+        currentPosition = new ChessBoardPosition('b',2 );
+        desiredPosition = new ChessBoardPosition('b',4 );
+
+        Assert.assertFalse(chess.set(currentPosition, desiredPosition));
+
+
+    }
 
 
 

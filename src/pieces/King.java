@@ -12,6 +12,12 @@ public class King extends ChessPiece {
         super(board, color);
     }
 
+    private boolean checkMove(ChessPosition position) throws GameException {
+        ChessPiece p = getBoard().piece(position);
+        return p == null || p.getColor() != getColor();
+
+    }
+
     @Override
     public boolean[][] possibleMoves() throws GameException {
         boolean[][] moves = new boolean[getBoard().getRows()][getBoard().getColumns()];
@@ -21,49 +27,49 @@ public class King extends ChessPiece {
 
         // king moving up
         p.setValues(position.getXCoordinate(), position.getYCoordinate() +1);
-        if(getBoard().isBoardPosition(p) && (getBoard().piece(p) == null || getBoard().piece(p).getColor() != getColor() )){
+        if(getBoard().isBoardPosition(p) && (checkMove(p))){
             moves[p.getXCoordinate()][p.getYCoordinate()] = true;
         }
 
         // king moving down
         p.setValues(position.getXCoordinate(), position.getYCoordinate() -1);
-        if(getBoard().isBoardPosition(p) && isThereOpponentPiece(p)){
+        if(getBoard().isBoardPosition(p) && (checkMove(p))){
             moves[p.getXCoordinate()][p.getYCoordinate()] = true;
         }
 
         // king moving right
         p.setValues(position.getXCoordinate() +1, position.getYCoordinate());
-        if(getBoard().isBoardPosition(p) && isThereOpponentPiece(p)){
+        if(getBoard().isBoardPosition(p) && (checkMove(p))){
             moves[p.getXCoordinate()][p.getYCoordinate()] = true;
         }
 
         // king moving left
         p.setValues(position.getXCoordinate() -1, position.getYCoordinate());
-        if(getBoard().isBoardPosition(p) && isThereOpponentPiece(p)){
+        if(getBoard().isBoardPosition(p) && (checkMove(p))){
             moves[p.getXCoordinate()][p.getYCoordinate()] = true;
         }
 
         // king moving up-right
         p.setValues(position.getXCoordinate()+1, position.getYCoordinate() +1);
-        if(getBoard().isBoardPosition(p) && (getBoard().piece(p) == null || getBoard().piece(p).getColor() != getColor() )){
+        if(getBoard().isBoardPosition(p) && (checkMove(p))){
             moves[p.getXCoordinate()][p.getYCoordinate()] = true;
         }
 
         // king moving up-left
         p.setValues(position.getXCoordinate()-1, position.getYCoordinate() +1);
-        if(getBoard().isBoardPosition(p) && isThereOpponentPiece(p)){
+        if(getBoard().isBoardPosition(p) && (checkMove(p))){
             moves[p.getXCoordinate()][p.getYCoordinate()] = true;
         }
 
         // king moving down-right
         p.setValues(position.getXCoordinate() +1, position.getYCoordinate()-1);
-        if(getBoard().isBoardPosition(p) && isThereOpponentPiece(p)){
+        if(getBoard().isBoardPosition(p) && (checkMove(p))){
             moves[p.getXCoordinate()][p.getYCoordinate()] = true;
         }
 
         // king moving down-left
         p.setValues(position.getXCoordinate() -1, position.getYCoordinate()-1);
-        if(getBoard().isBoardPosition(p) && isThereOpponentPiece(p)){
+        if(getBoard().isBoardPosition(p) && (checkMove(p))){
             moves[p.getXCoordinate()][p.getYCoordinate()] = true;
         }
 
