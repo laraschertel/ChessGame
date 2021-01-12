@@ -44,18 +44,6 @@ public interface ChessLocalBoard extends Chess{
      */
     void subscribeChangeListener(LocalBoardChangeListener changeListener);
 
-    /**
-     *
-     * @return true if player is under check, false otherwise
-     */
-    boolean isCheck();
-
-    /**
-     *
-     * @return ture if player is under checkmate, false otherwise
-     */
-    boolean isCheckMate();
-
 
 
 }

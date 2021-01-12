@@ -13,6 +13,7 @@ public class Rook extends ChessPiece {
         super(board, color);
     }
 
+
     @Override
     public boolean[][] possibleMoves() throws GameException {
         boolean[][] moves = new boolean[getBoard().getRows()][getBoard().getColumns()];
@@ -28,7 +29,7 @@ public class Rook extends ChessPiece {
             p.setValues(p.getXCoordinate() , p.getYCoordinate()+1);
         }
         //rook can take the piece that is standing on the way and take its position
-        if(getBoard().isBoardPosition(p) && isThereOpponentPiece(p)){
+        if(getBoard().isBoardPosition(p) && checkMove(p)){
             moves[p.getXCoordinate()][p.getYCoordinate()] = true;
         }
 
@@ -38,7 +39,7 @@ public class Rook extends ChessPiece {
             moves[p.getXCoordinate()][p.getYCoordinate()] = true;
             p.setValues(p.getXCoordinate(), p.getYCoordinate()-1);
         }
-        if(getBoard().isBoardPosition(p) && isThereOpponentPiece(p)){
+        if(getBoard().isBoardPosition(p) && checkMove(p)){
             moves[p.getXCoordinate()][p.getYCoordinate()] = true;
         }
 
@@ -48,7 +49,7 @@ public class Rook extends ChessPiece {
             moves[p.getXCoordinate()][p.getYCoordinate()] = true;
             p.setValues(p.getXCoordinate() +1, p.getYCoordinate());
         }
-        if(getBoard().isBoardPosition(p) && isThereOpponentPiece(p)){
+        if(getBoard().isBoardPosition(p) && checkMove(p)){
             moves[p.getXCoordinate()][p.getYCoordinate()] = true;
         }
 
@@ -58,7 +59,7 @@ public class Rook extends ChessPiece {
             moves[p.getXCoordinate()][p.getYCoordinate()] = true;
             p.setValues(p.getXCoordinate() -1 , p.getYCoordinate());
         }
-        if(getBoard().isBoardPosition(p) && isThereOpponentPiece(p)){
+        if(getBoard().isBoardPosition(p) && checkMove(p)){
             moves[p.getXCoordinate()][p.getYCoordinate()] = true;
         }
 

@@ -17,7 +17,7 @@ public class ChessBoardPosition{
 
      }
 
-     protected ChessPosition toPosition() throws GameException {
+    public ChessPosition toPosition() throws GameException {
          return new ChessPosition((8 - iCoordinate), (sCoordinate - 'a') );
 
      }

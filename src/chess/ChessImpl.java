@@ -147,8 +147,6 @@ public class ChessImpl implements Chess, GameSessionEstablishedListener, ChessLo
                 
             }
         }
-
-
         if(testCheck(opponentColor()) && !testCheckMate(opponentColor())){
             System.out.println("you put your opponent under CHECK!");
         }
@@ -170,7 +168,6 @@ public class ChessImpl implements Chess, GameSessionEstablishedListener, ChessLo
             // remote call
             this.notifyBoardChanged();
         }
-
 
         return (this.localWon);
     }
@@ -203,13 +200,12 @@ public class ChessImpl implements Chess, GameSessionEstablishedListener, ChessLo
     }
 
     public ChessColor currentPlayerColor(){
-        if(this.status == Status.ACTIVE_WHITE){
+        if(this.status == Status.ACTIVE_WHITE) {
             return ChessColor.white;
-        } else if(this.status == Status.ACTIVE_BLACK){
+        }if(this.status == Status.ACTIVE_BLACK){
             return ChessColor.black;
-        }else {
-            return null;
         }
+            return null;
     }
     
 
@@ -311,6 +307,9 @@ public class ChessImpl implements Chess, GameSessionEstablishedListener, ChessLo
     }
 
 
+    public ChessPiece getCapturedPiece(ChessPosition currentPosition) throws GameException {
+        return board.piece(currentPosition);
+    }
     private ChessPiece makeMove(ChessPosition current, ChessPosition desired) throws GameException {
         ChessPiece piece =  board.removePiece(current);
         //piece.increaseMoveCount();
@@ -398,18 +397,6 @@ public class ChessImpl implements Chess, GameSessionEstablishedListener, ChessLo
                     }
         }
         })).start();
-    }
-
-    // TODO
-    @Override
-    public boolean isCheck() {
-        return this.check;
-    }
-
-    // TODO
-    @Override
-    public boolean isCheckMate() {
-        return this.checkMate;
     }
 
 

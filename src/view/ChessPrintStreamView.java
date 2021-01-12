@@ -9,6 +9,7 @@ import chessBoardGame.ChessPosition;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -29,12 +30,6 @@ public class ChessPrintStreamView implements PrintStreamView {
         printBoard(gameEngine.getPieces());
         System.out.println();
         capturedPieces(capturedPieces);
-
-        if(gameEngine.isCheck()){
-                System.out.println("Check!");
-        } else if (gameEngine.isCheckMate()) {
-            System.out.println("CHECKMATE!");
-        }
 
     }
 
@@ -79,12 +74,16 @@ public class ChessPrintStreamView implements PrintStreamView {
     }
 
     private static void capturedPieces(List<ChessPiece> chessPieces) {
-        List<ChessPiece> white = chessPieces.stream().filter(x->x
-                .getColor() == ChessColor.white).collect(Collectors.toList());
-
-        List<ChessPiece> black = chessPieces.stream().filter(x->x
-                .getColor() == ChessColor.black).collect(Collectors.toList());
-        System.out.println("Captured pieces: ");
+        List<ChessPiece> white = new ArrayList<>();
+        List<ChessPiece> black = new ArrayList<>();
+        for(int i = 0; i < chessPieces.size(); i++){
+            if(chessPieces.get(i).getColor() == ChessColor.white){
+                white.add(chessPieces.get(i));
+            }else{
+                black.add(chessPieces.get(i));
+            }
+        }
+       /* System.out.println("Captured pieces: ");
         System.out.print("White pieces: ");
         System.out.print(BoardColors.WHITE);
         System.out.println(Arrays.toString(white.toArray()));
@@ -93,10 +92,9 @@ public class ChessPrintStreamView implements PrintStreamView {
         System.out.print(BoardColors.YELLOW);
         System.out.println(Arrays.toString(black.toArray()));
 
+        */
 
     }
-
-
 
     }
 

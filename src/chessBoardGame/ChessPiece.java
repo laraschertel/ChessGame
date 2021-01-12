@@ -40,10 +40,9 @@ public abstract class ChessPiece {
         return color;
     }
 
-
-    protected boolean isThereOpponentPiece(ChessPosition position) throws GameException {
-        ChessPiece piece = (getBoard().piece(position));
-        return piece != null && piece.getColor() != color;
+    protected boolean checkMove(ChessPosition position) throws GameException {
+        ChessPiece p = getBoard().piece(position);
+        return p == null || p.getColor() != getColor();
     }
 
 

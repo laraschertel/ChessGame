@@ -12,11 +12,6 @@ public class King extends ChessPiece {
         super(board, color);
     }
 
-    private boolean checkMove(ChessPosition position) throws GameException {
-        ChessPiece p = getBoard().piece(position);
-        return p == null || p.getColor() != getColor();
-
-    }
 
     @Override
     public boolean[][] possibleMoves() throws GameException {

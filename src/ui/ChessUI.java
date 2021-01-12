@@ -2,6 +2,7 @@ package ui;
 
 import chess.*;
 import chessBoardGame.ChessPiece;
+import chessBoardGame.ChessPosition;
 import network.GameSessionEstablishedListener;
 import network.TCPStream;
 import network.TCPStreamCreatedListener;
@@ -26,7 +27,7 @@ public class ChessUI implements TCPStreamCreatedListener, GameSessionEstablished
     private String partnerName;
     private ChessTCPProtocolEngine protocolEngine;
     private Status status;
-    private final List<ChessPiece> captureChessPieces = new ArrayList<>();
+    public final List<ChessPiece> captureChessPieces = new ArrayList<>();
     //TODO: captured pieces are not showing - connection breaks after a while
 
     public static void main(String[] args) throws IOException, GameException {
@@ -160,28 +161,31 @@ public class ChessUI implements TCPStreamCreatedListener, GameSessionEstablished
         // call guards
         this.checkConnectionStatus();
 
-        System.out.println("Please enter the current position of the piece that you want to move");
-        Scanner scanner = new Scanner(System.in);
-        String cp = scanner.nextLine();
-        ChessBoardPosition currentPosition = new ChessBoardPosition(cp.charAt(0), Integer.parseInt(cp.substring(1)));
+        if(!this.gameEngine.isActive()){
+            throw new GameException("you can't set a piece, it is not your turn");
+        }else {
 
-        boolean[][] possibleMoves = this.gameEngine.possibleMoves(currentPosition);
-        ChessPrintStreamView.printBoard(this.gameEngine.getPieces(), possibleMoves);
+            System.out.println("Please enter the current position of the piece that you want to move");
+            Scanner scanner = new Scanner(System.in);
+            String cp = scanner.nextLine();
+            ChessBoardPosition currentPosition = new ChessBoardPosition(cp.charAt(0), Integer.parseInt(cp.substring(1)));
 
-        System.out.println("Please enter the desired position of the piece that you want to move");
-        String dp = scanner.nextLine();
+            boolean[][] possibleMoves = this.gameEngine.possibleMoves(currentPosition);
+            ChessPrintStreamView.printBoard(this.gameEngine.getPieces(), possibleMoves);
+
+            System.out.println("Please enter the desired position of the piece that you want to move");
+            String dp = scanner.nextLine();
+
+            ChessBoardPosition desiredPosition = new ChessBoardPosition(dp.charAt(0), Integer.parseInt(dp.substring(1)));
+
+            this.gameEngine.set(currentPosition, desiredPosition);
 
 
-        ChessBoardPosition desiredPosition = new ChessBoardPosition(dp.charAt(0), Integer.parseInt(dp.substring(1)));
-
-
-        this.gameEngine.set(currentPosition, desiredPosition);
-
-
-        ChessPrintStreamView.printBoard(this.gameEngine.getPieces());
-        System.out.println();
+            System.out.println();
+        }
 
     }
+
 
     private void doExit() throws IOException {
         // shutdown engines which needs to be
@@ -221,7 +225,7 @@ public class ChessUI implements TCPStreamCreatedListener, GameSessionEstablished
 
             try {
                 System.out.print(BoardColors.RESET);
-                ChessPrintStreamView.printChess(this.gameEngine, this.captureChessPieces);
+                ChessPrintStreamView.printBoard(this.gameEngine.getPieces());
                 System.out.println();
 
             }catch (GameException | InputMismatchException e) {
@@ -231,12 +235,12 @@ public class ChessUI implements TCPStreamCreatedListener, GameSessionEstablished
 
         if(this.gameEngine.getStatus() == Status.ENDED) {
             if(this.gameEngine.hasWon()) {
-                System.out.println("you won");
+                System.out.println("you won!!!");
             } else {
-                System.out.println("you lost");
+                System.out.println("you lost :(");
             }
         } else if(this.gameEngine.isActive()) {
-            System.out.println("your turn");
+            System.out.println("your turn!");
         } else {
             System.out.println("please wait for the other player to make a move");
         }

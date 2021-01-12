@@ -26,7 +26,7 @@ public class Bishop extends ChessPiece {
             moves[p.getXCoordinate()][p.getYCoordinate()] = true;
             p.setValues(p.getXCoordinate() - 1, p.getYCoordinate() - 1);
         }
-        if (getBoard().isBoardPosition(p) && isThereOpponentPiece(p)) {
+        if(getBoard().isBoardPosition(p) && checkMove(p)){
             moves[p.getXCoordinate()][p.getYCoordinate()] = true;
         }
 
@@ -36,7 +36,7 @@ public class Bishop extends ChessPiece {
             moves[p.getXCoordinate()][p.getYCoordinate()] = true;
             p.setValues(p.getXCoordinate() - 1, p.getYCoordinate() + 1);
         }
-        if (getBoard().isBoardPosition(p) && isThereOpponentPiece(p)) {
+        if(getBoard().isBoardPosition(p) && checkMove(p)){
             moves[p.getXCoordinate()][p.getYCoordinate()] = true;
         }
 
@@ -46,17 +46,17 @@ public class Bishop extends ChessPiece {
             moves[p.getXCoordinate()][p.getYCoordinate()] = true;
             p.setValues(p.getXCoordinate() + 1, p.getYCoordinate() + 1);
         }
-        if (getBoard().isBoardPosition(p) && isThereOpponentPiece(p)) {
+        if(getBoard().isBoardPosition(p) && checkMove(p)){
             moves[p.getXCoordinate()][p.getYCoordinate()] = true;
         }
 
-        // below
+        // down
         p.setValues(position.getXCoordinate() + 1, position.getYCoordinate() - 1 );
         while (getBoard().isBoardPosition(p) && !getBoard().positionIsOccupied(p)) {
             moves[p.getXCoordinate()][p.getYCoordinate()] = true;
             p.setValues(p.getXCoordinate() + 1, p.getYCoordinate() - 1);
         }
-        if (getBoard().isBoardPosition(p) && isThereOpponentPiece(p)) {
+        if(getBoard().isBoardPosition(p) && checkMove(p)){
             moves[p.getXCoordinate()][p.getYCoordinate()] = true;
         }
 

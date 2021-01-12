@@ -14,6 +14,10 @@ public class Pawn extends ChessPiece {
         super(board, color);
 
     }
+    private boolean isThereOpponentPiece(ChessPosition position) throws GameException {
+        ChessPiece piece = (getBoard().piece(position));
+        return piece != null && piece.getColor() !=getColor();
+    }
 
     @Override
     public boolean[][] possibleMoves() throws GameException {
@@ -40,7 +44,7 @@ public class Pawn extends ChessPiece {
                 moves[p.getXCoordinate()][p.getYCoordinate()] = true;
             }
             // pawn can move one tile ahead and one to the side if tile is occupied (taking the opponents piece)
-            p.setValues(position.getYCoordinate() - 1, position.getXCoordinate() + 1);
+            p.setValues(position.getXCoordinate() - 1, position.getYCoordinate() + 1);
             if (getBoard().isBoardPosition(p) && isThereOpponentPiece(p)) {
                 moves[p.getXCoordinate()][p.getYCoordinate()] = true;
             }
@@ -64,7 +68,7 @@ public class Pawn extends ChessPiece {
                 moves[p.getXCoordinate()][p.getYCoordinate()] = true;
             }
             // pawn can move one tile ahead and one to the side if tile is occupied (taking the opponents piece)
-            p.setValues(position.getYCoordinate() + 1, position.getXCoordinate() - 1);
+            p.setValues(position.getXCoordinate() + 1, position.getYCoordinate() - 1);
             if (getBoard().isBoardPosition(p) && isThereOpponentPiece(p)) {
                 moves[p.getYCoordinate()][p.getXCoordinate()] = true;
             }
