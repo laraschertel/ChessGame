@@ -1,5 +1,7 @@
 package chess;
 
+import chessBoardGame.ChessBoard;
+import chessBoardGame.ChessPiece;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -69,34 +71,119 @@ public class UsageTest {
 
 
     @Test
-    public void goodCompleteGame2() throws GameException, StatusException{
+    public void scholarsMate() throws GameException, StatusException{
         ChessLocalBoard chess = this.getChess();
         ChessColor aliceColor = chess.pick(ALICE, ChessColor.white);
         ChessColor bobColor = chess.pick(BOB, ChessColor.black);
 
-        ChessBoardPosition currentPosition = new ChessBoardPosition('a',2 );
-        ChessBoardPosition desiredPosition = new ChessBoardPosition('a',3 );
+        //white
+        ChessBoardPosition currentPosition = new ChessBoardPosition('e',2 );
+        ChessBoardPosition desiredPosition = new ChessBoardPosition('e',4 );
 
         Assert.assertFalse(chess.set(currentPosition, desiredPosition));
 
-        currentPosition = new ChessBoardPosition('a',7 );
+        //black
+        currentPosition = new ChessBoardPosition('e',7 );
+        desiredPosition = new ChessBoardPosition('e',5 );
+
+        Assert.assertFalse(chess.set(currentPosition, desiredPosition));
+
+        //white
+        currentPosition = new ChessBoardPosition('f',1 );
+        desiredPosition = new ChessBoardPosition('c',4 );
+
+        Assert.assertFalse(chess.set(currentPosition, desiredPosition));
+
+        //black
+        currentPosition = new ChessBoardPosition('b',8 );
+        desiredPosition = new ChessBoardPosition('c',6 );
+
+        Assert.assertFalse(chess.set(currentPosition, desiredPosition));
+
+        //white
+        currentPosition = new ChessBoardPosition('d',1 );
+        desiredPosition = new ChessBoardPosition('h',5 );
+
+        Assert.assertFalse(chess.set(currentPosition, desiredPosition));
+
+        //black
+        currentPosition = new ChessBoardPosition('g',8 );
+        desiredPosition = new ChessBoardPosition('f',6 );
+
+        Assert.assertFalse(chess.set(currentPosition, desiredPosition));
+
+        //white
+        currentPosition = new ChessBoardPosition('h',5 );
+        desiredPosition = new ChessBoardPosition('f',7 );
+
+        Assert.assertTrue(chess.set(currentPosition, desiredPosition));
+    }
+
+    @Test
+    public void getPromoted() throws GameException, StatusException{
+        ChessLocalBoard chess = this.getChess();
+        ChessColor aliceColor = chess.pick(ALICE, ChessColor.white);
+        ChessColor bobColor = chess.pick(BOB, ChessColor.black);
+
+        //white
+        ChessBoardPosition currentPosition = new ChessBoardPosition('a',2 );
+        ChessBoardPosition desiredPosition = new ChessBoardPosition('a',4 );
+
+        Assert.assertFalse(chess.set(currentPosition, desiredPosition));
+
+        //black
+        currentPosition = new ChessBoardPosition('e',7 );
+        desiredPosition = new ChessBoardPosition('e',5 );
+
+        Assert.assertFalse(chess.set(currentPosition, desiredPosition));
+
+
+        //white
+        currentPosition = new ChessBoardPosition('a',4 );
         desiredPosition = new ChessBoardPosition('a',5 );
 
         Assert.assertFalse(chess.set(currentPosition, desiredPosition));
 
-        currentPosition = new ChessBoardPosition('b',1 );
-        desiredPosition = new ChessBoardPosition('c',3 );
+
+        //black
+        currentPosition = new ChessBoardPosition('b',8 );
+        desiredPosition = new ChessBoardPosition('c',6 );
 
         Assert.assertFalse(chess.set(currentPosition, desiredPosition));
 
-        currentPosition = new ChessBoardPosition('b',2 );
-        desiredPosition = new ChessBoardPosition('b',4 );
+        //white
+        currentPosition = new ChessBoardPosition('a',5 );
+        desiredPosition = new ChessBoardPosition('a',6 );
+
+        Assert.assertFalse(chess.set(currentPosition, desiredPosition));
+
+        //black
+        currentPosition = new ChessBoardPosition('g',8 );
+        desiredPosition = new ChessBoardPosition('f',6 );
+
+        Assert.assertFalse(chess.set(currentPosition, desiredPosition));
+
+        //white
+        currentPosition = new ChessBoardPosition('a',6 );
+        desiredPosition = new ChessBoardPosition('b',7 );
+
+        Assert.assertFalse(chess.set(currentPosition, desiredPosition));
+
+
+        //black
+        currentPosition = new ChessBoardPosition('h',7 );
+        desiredPosition = new ChessBoardPosition('h',5 );
+
+        Assert.assertFalse(chess.set(currentPosition, desiredPosition));
+
+        //white - promoted piece is now a Queen and can move to the side
+        currentPosition = new ChessBoardPosition('b',7 );
+        desiredPosition = new ChessBoardPosition('b',8 );
 
         Assert.assertFalse(chess.set(currentPosition, desiredPosition));
 
 
     }
-
 
 
 
